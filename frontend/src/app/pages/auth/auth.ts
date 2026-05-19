@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 
 import { ModoAutenticacao } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
+import { NgxMaskDirective } from 'ngx-mask';
 
 const REGEX_SENHA_FORTE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{6,}$/;
 
@@ -26,7 +27,7 @@ interface RespostaViaCep {
 
 @Component({
   selector: 'app-auth',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, NgxMaskDirective],
   templateUrl: './auth.html',
   styleUrl: './auth.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,60 +86,66 @@ export class AuthPage {
     }),
   });
 
-  protected readonly formularioAluno = new FormGroup({
-    nome: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    cpf: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    rg: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    endereco: new FormGroup({
-      cep: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.minLength(8), Validators.maxLength(9)],
+  protected readonly formularioAluno = new FormGroup(
+    {
+      nome: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      cpf: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      rg: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      endereco: new FormGroup({
+        cep: new FormControl('', {
+          nonNullable: true,
+          validators: [Validators.minLength(8), Validators.maxLength(9)],
+        }),
+        rua: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        numero: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        complemento: new FormControl('', { nonNullable: true }),
+        bairro: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        cidade: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        uf: new FormControl('', {
+          nonNullable: true,
+          validators: [Validators.required, Validators.minLength(2), Validators.maxLength(2)],
+        }),
       }),
-      rua: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      numero: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      complemento: new FormControl('', { nonNullable: true }),
-      bairro: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      cidade: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      uf: new FormControl('', {
+      instituicao: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      curso: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      email: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(2), Validators.maxLength(2)],
+        validators: [Validators.required, Validators.email],
       }),
-    }),
-    instituicao: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    curso: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    email: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.email],
-    }),
-    senha: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(REGEX_SENHA_FORTE)],
-    }),
-    confirmarSenha: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-  }, { validators: senhasIguais });
+      senha: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(REGEX_SENHA_FORTE)],
+      }),
+      confirmarSenha: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+    },
+    { validators: senhasIguais },
+  );
 
-  protected readonly formularioEmpresa = new FormGroup({
-    nome: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    email: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.email],
-    }),
-    senha: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(REGEX_SENHA_FORTE)],
-    }),
-    confirmarSenha: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-    cnpj: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.minLength(14), Validators.maxLength(18)],
-    }),
-  }, { validators: senhasIguais });
+  protected readonly formularioEmpresa = new FormGroup(
+    {
+      nome: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      email: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.email],
+      }),
+      senha: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(REGEX_SENHA_FORTE)],
+      }),
+      confirmarSenha: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      cnpj: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.minLength(14), Validators.maxLength(18)],
+      }),
+    },
+    { validators: senhasIguais },
+  );
 
   protected selecionarLogin(): void {
     this.modoAtual.set('login');
@@ -174,20 +181,18 @@ export class AuthPage {
 
   private buscarCepNoViaCep(cep: string): void {
     this.buscandoCep.set(true);
-    this.httpClient
-      .get<RespostaViaCep>(`https://viacep.com.br/ws/${cep}/json/`)
-      .subscribe({
-        next: (resposta) => {
-          this.buscandoCep.set(false);
-          if (resposta.erro) {
-            return;
-          }
-          this.preencherEnderecoSeVazio(resposta);
-        },
-        error: () => {
-          this.buscandoCep.set(false);
-        },
-      });
+    this.httpClient.get<RespostaViaCep>(`https://viacep.com.br/ws/${cep}/json/`).subscribe({
+      next: (resposta) => {
+        this.buscandoCep.set(false);
+        if (resposta.erro) {
+          return;
+        }
+        this.preencherEnderecoSeVazio(resposta);
+      },
+      error: () => {
+        this.buscandoCep.set(false);
+      },
+    });
   }
 
   private preencherEnderecoSeVazio(resposta: RespostaViaCep): void {
