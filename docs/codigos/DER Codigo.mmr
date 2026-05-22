@@ -39,6 +39,7 @@ erDiagram
 	PROFESSORES {
 		int id PK ""
 		string departamento  ""
+		float saldo  ""
 	}
 
 	EMPRESAS_PARCEIRAS {
