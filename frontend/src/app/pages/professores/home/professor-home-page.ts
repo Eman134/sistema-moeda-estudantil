@@ -21,6 +21,14 @@ interface MotivoEnvioMoedas {
   motivo: string;
 }
 
+interface EnvioMultiploAluno {
+  aluno: AlunoResumo;
+  valor: number | null;
+  motivo: string;
+}
+
+type EtapaEnvioMultiplo = 'inativo' | 'selecao' | 'preenchimento' | 'confirmacao';
+
 @Component({
   selector: 'app-professor-home-page',
   imports: [ReactiveFormsModule],
@@ -47,12 +55,36 @@ export class ProfessorHomePage {
   protected readonly motivoPendente = signal<MotivoEnvioMoedas | null>(null);
   protected readonly confirmacaoPendente = signal<ConfirmacaoEnvioMoedas | null>(null);
   protected readonly moedasPorAluno = signal<Record<number, number | null>>({});
+  protected readonly etapaEnvioMultiplo = signal<EtapaEnvioMultiplo>('inativo');
+  protected readonly alunosSelecionados = signal<Record<number, EnvioMultiploAluno>>({});
+  protected readonly valorPadraoMultiplo = signal<number | null>(null);
+  protected readonly motivoPadraoMultiplo = signal('');
+  protected readonly padroesMultiploAberto = signal(false);
 
   protected readonly paginaExibida = computed(() => this.paginaAtual() + 1);
   protected readonly podeVoltarPagina = computed(() => this.paginaAtual() > 0 && !this.carregandoAlunos());
   protected readonly podeAvancarPagina = computed(
     () => this.paginaAtual() + 1 < this.totalPaginas() && !this.carregandoAlunos(),
   );
+  protected readonly alunosSelecionadosLista = computed(() => Object.values(this.alunosSelecionados()));
+  protected readonly totalSelecionados = computed(() => this.alunosSelecionadosLista().length);
+  protected readonly totalEnvioMultiplo = computed(() =>
+    this.alunosSelecionadosLista().reduce((total, item) => total + (item.valor ?? 0), 0),
+  );
+  protected readonly saldoAposEnvioMultiplo = computed(
+    () => (this.saldoProfessor() ?? 0) - this.totalEnvioMultiplo(),
+  );
+  protected readonly envioMultiploValido = computed(() => {
+    const selecionados = this.alunosSelecionadosLista();
+    const saldo = this.saldoProfessor();
+
+    return Boolean(
+      selecionados.length > 0 &&
+        saldo !== null &&
+        this.totalEnvioMultiplo() <= saldo &&
+        selecionados.every((item) => item.valor !== null && item.valor > 0 && item.motivo.trim()),
+    );
+  });
 
   constructor() {
     this.carregarResumoProfessor();
@@ -96,6 +128,161 @@ export class ProfessorHomePage {
     }
 
     this.motivoPendente.set({ aluno, valor, motivo: '' });
+  }
+
+  protected iniciarEnvioMultiplo(): void {
+    this.etapaEnvioMultiplo.set('selecao');
+    this.motivoPendente.set(null);
+    this.confirmacaoPendente.set(null);
+  }
+
+  protected cancelarEnvioMultiplo(): void {
+    if (this.enviandoMoedas()) {
+      return;
+    }
+
+    this.etapaEnvioMultiplo.set('inativo');
+    this.alunosSelecionados.set({});
+    this.valorPadraoMultiplo.set(null);
+    this.motivoPadraoMultiplo.set('');
+  }
+
+  protected alternarSelecaoAluno(aluno: AlunoResumo, evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+
+    this.alunosSelecionados.update((selecionados) => {
+      const atualizados = { ...selecionados };
+
+      if (campo.checked) {
+        atualizados[aluno.id] = atualizados[aluno.id] ?? { aluno, valor: null, motivo: '' };
+      } else {
+        delete atualizados[aluno.id];
+      }
+
+      return atualizados;
+    });
+  }
+
+  protected alunoEstaSelecionado(alunoId: number): boolean {
+    return Boolean(this.alunosSelecionados()[alunoId]);
+  }
+
+  protected limparSelecaoMultipla(): void {
+    this.alunosSelecionados.set({});
+  }
+
+  protected abrirPreenchimentoMultiplo(): void {
+    if (this.totalSelecionados() < 2) {
+      this.toastService.aviso('Selecione mais alunos', 'O envio múltiplo precisa de pelo menos dois alunos.');
+      return;
+    }
+
+    this.etapaEnvioMultiplo.set('preenchimento');
+  }
+
+  protected alternarPadroesMultiplo(): void {
+    this.padroesMultiploAberto.update((aberto) => !aberto);
+  }
+
+  protected atualizarValorPadraoMultiplo(evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    this.valorPadraoMultiplo.set(campo.value ? Number(campo.value) : null);
+  }
+
+  protected atualizarMotivoPadraoMultiplo(evento: Event): void {
+    const campo = evento.target as HTMLTextAreaElement;
+    this.motivoPadraoMultiplo.set(campo.value);
+  }
+
+  protected aplicarPadroesMultiplo(): void {
+    const valorPadrao = this.valorPadraoMultiplo();
+    const motivoPadrao = this.motivoPadraoMultiplo().trim();
+
+    if ((!valorPadrao || valorPadrao <= 0) && !motivoPadrao) {
+      this.toastService.aviso('Preencha um padrão', 'Informe um valor, um motivo ou ambos antes de aplicar.');
+      return;
+    }
+
+    this.alunosSelecionados.update((selecionados) => {
+      const atualizados: Record<number, EnvioMultiploAluno> = {};
+      for (const [alunoId, item] of Object.entries(selecionados)) {
+        atualizados[Number(alunoId)] = {
+          ...item,
+          valor: valorPadrao && valorPadrao > 0 ? valorPadrao : item.valor,
+          motivo: motivoPadrao || item.motivo,
+        };
+      }
+      return atualizados;
+    });
+  }
+
+  protected atualizarValorMultiplo(alunoId: number, evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const valor = campo.value ? Number(campo.value) : null;
+
+    this.alunosSelecionados.update((selecionados) => ({
+      ...selecionados,
+      [alunoId]: { ...selecionados[alunoId], valor },
+    }));
+  }
+
+  protected atualizarMotivoMultiplo(alunoId: number, evento: Event): void {
+    const campo = evento.target as HTMLTextAreaElement;
+
+    this.alunosSelecionados.update((selecionados) => ({
+      ...selecionados,
+      [alunoId]: { ...selecionados[alunoId], motivo: campo.value },
+    }));
+  }
+
+  protected voltarParaPreenchimentoMultiplo(): void {
+    this.etapaEnvioMultiplo.set('preenchimento');
+  }
+
+  protected abrirConfirmacaoMultipla(): void {
+    if (!this.envioMultiploValido()) {
+      this.toastService.aviso(
+        'Revise os envios',
+        'Todos os alunos precisam de valor, motivo e o total não pode exceder o saldo disponível.',
+      );
+      return;
+    }
+
+    this.etapaEnvioMultiplo.set('confirmacao');
+  }
+
+  protected confirmarEnvioMultiplo(): void {
+    if (!this.envioMultiploValido() || this.enviandoMoedas()) {
+      return;
+    }
+
+    const envios = this.alunosSelecionadosLista().map((item) => ({
+      alunoId: item.aluno.id,
+      valor: item.valor ?? 0,
+      motivo: item.motivo.trim(),
+    }));
+    const total = this.totalEnvioMultiplo();
+    const quantidadeAlunos = this.totalSelecionados();
+
+    this.enviandoMoedas.set(true);
+    this.moedasService
+      .enviarMoedas({ envios })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.enviandoMoedas.set(false);
+          this.toastService.sucesso(
+            'Moedas enviadas',
+            `${total} moedas distribuídas para ${quantidadeAlunos} aluno${quantidadeAlunos === 1 ? '' : 's'}.`,
+          );
+          this.cancelarEnvioMultiplo();
+          this.carregarAlunos();
+        },
+        error: (erro: unknown) => {
+          this.enviandoMoedas.set(false);
+          this.toastService.erro('Erro ao enviar moedas', this.extrairMensagemErro(erro));
+        },
+      });
   }
 
   protected atualizarMotivoPendente(evento: Event): void {
@@ -187,10 +374,7 @@ export class ProfessorHomePage {
   }
 
   protected abrirEnvioEmMassa(): void {
-    this.toastService.informativo(
-      'Em breve',
-      'Envio em massa será habilitado na próxima etapa do frontend.',
-    );
+    this.iniciarEnvioMultiplo();
   }
 
   protected formatarMoedas(valor: number | null): string {

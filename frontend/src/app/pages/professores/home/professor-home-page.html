@@ -52,6 +52,41 @@
           </button>
         </div>
 
+        @if (etapaEnvioMultiplo() === 'selecao') {
+          <div
+            class="mb-5 flex flex-col gap-3 rounded-3xl border border-primary-300/15 bg-primary-500/10 p-4 text-sm text-primary-100 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span class="font-semibold">
+              {{ totalSelecionados() }} aluno{{ totalSelecionados() === 1 ? '' : 's' }} selecionado{{ totalSelecionados() === 1 ? '' : 's' }}
+            </span>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="rounded-full border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                (click)="cancelarEnvioMultiplo()"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="rounded-full border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:text-slate-500"
+                [disabled]="totalSelecionados() === 0"
+                (click)="limparSelecaoMultipla()"
+              >
+                Limpar seleção
+              </button>
+              <button
+                type="button"
+                class="rounded-full bg-primary-500 px-4 py-2 font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                [disabled]="totalSelecionados() < 2"
+                (click)="abrirPreenchimentoMultiplo()"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        }
+
         <div class="mb-5">
           <label class="sr-only" for="pesquisa-alunos">Pesquisar alunos</label>
           <input
@@ -82,44 +117,62 @@
           @for (aluno of alunosRelacionados(); track aluno.id) {
             <article class="rounded-3xl border border-primary-300/12 bg-surface-900/70 p-5">
               <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 class="font-brand text-xl font-bold text-white">{{ aluno.nome }}</h2>
-                  <p class="mt-1 text-sm text-slate-400">
-                    {{ aluno.curso }} · {{ aluno.instituicao }}
-                  </p>
-                  <p class="mt-3 text-sm font-medium text-primary-100">
-                    Saldo do aluno: {{ aluno.saldo }} moedas
-                  </p>
-                </div>
-                <div
-                  class="flex w-full flex-col gap-2 sm:w-44"
-                  aria-label="Distribuir moedas para {{ aluno.nome }}"
-                >
+                <div class="flex gap-4">
+                  @if (etapaEnvioMultiplo() === 'selecao') {
+                    <div class="pt-1">
+                      <label class="sr-only" [for]="'selecionar-aluno-' + aluno.id">
+                        Selecionar {{ aluno.nome }} para envio múltiplo
+                      </label>
+                      <input
+                        class="h-5 w-5 rounded border-primary-300/40 bg-surface-950 text-primary-500 accent-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                        type="checkbox"
+                        [id]="'selecionar-aluno-' + aluno.id"
+                        [checked]="alunoEstaSelecionado(aluno.id)"
+                        (change)="alternarSelecaoAluno(aluno, $event)"
+                      />
+                    </div>
+                  }
                   <div>
-                    <label class="sr-only" [for]="'moedas-aluno-' + aluno.id">
-                      Quantidade de moedas para {{ aluno.nome }}
-                    </label>
-                    <input
-                      class="w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
-                      type="number"
-                      min="1"
-                      step="1"
-                      inputmode="numeric"
-                      placeholder="Moedas"
-                      [id]="'moedas-aluno-' + aluno.id"
-                      [value]="obterQuantidadeMoedas(aluno.id) ?? ''"
-                      (input)="atualizarQuantidadeMoedas(aluno.id, $event)"
-                    />
+                    <h2 class="font-brand text-xl font-bold text-white">{{ aluno.nome }}</h2>
+                    <p class="mt-1 text-sm text-slate-400">
+                      {{ aluno.curso }} · {{ aluno.instituicao }}
+                    </p>
+                    <p class="mt-3 text-sm font-medium text-primary-100">
+                      Saldo do aluno: {{ aluno.saldo }} moedas
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    class="w-full rounded-full bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 text-nowrap focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-                    [disabled]="!podeDistribuirMoedas(aluno.id)"
-                    (click)="prepararEnvioMoedas(aluno)"
-                  >
-                    Enviar moedas
-                  </button>
                 </div>
+                @if (etapaEnvioMultiplo() !== 'selecao') {
+                  <div
+                    class="flex w-full flex-col gap-2 sm:w-44"
+                    aria-label="Distribuir moedas para {{ aluno.nome }}"
+                  >
+                    <div>
+                      <label class="sr-only" [for]="'moedas-aluno-' + aluno.id">
+                        Quantidade de moedas para {{ aluno.nome }}
+                      </label>
+                      <input
+                        class="w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                        placeholder="Moedas"
+                        [id]="'moedas-aluno-' + aluno.id"
+                        [value]="obterQuantidadeMoedas(aluno.id) ?? ''"
+                        (input)="atualizarQuantidadeMoedas(aluno.id, $event)"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="w-full rounded-full bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 text-nowrap focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                      [disabled]="!podeDistribuirMoedas(aluno.id)"
+                      (click)="prepararEnvioMoedas(aluno)"
+                    >
+                      Enviar moedas
+                    </button>
+                  </div>
+                }
               </div>
             </article>
           }
@@ -153,6 +206,231 @@
         </div>
       </div>
     </div>
+
+    @if (etapaEnvioMultiplo() === 'preenchimento') {
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-night-950/80 px-5 py-8 backdrop-blur-sm"
+        role="presentation"
+      >
+        <section
+          class="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preencher-envio-multiplo-title"
+        >
+          <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
+            Envio múltiplo
+          </p>
+          <h2 id="preencher-envio-multiplo-title" class="font-brand mt-3 text-2xl font-bold text-white">
+            Defina valores e motivos
+          </h2>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            Preencha os envios individualmente ou aplique um valor e motivo padrão para todos os alunos selecionados.
+          </p>
+
+          <div class="mt-5 overflow-hidden rounded-3xl border border-primary-300/12 bg-night-950/55">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-inset"
+              [attr.aria-expanded]="padroesMultiploAberto()"
+              aria-controls="padroes-envio-multiplo"
+              (click)="alternarPadroesMultiplo()"
+            >
+              <span>Configurar para todos</span>
+              <span
+                class="transition-transform duration-200"
+                [class.rotate-180]="padroesMultiploAberto()"
+                aria-hidden="true"
+              >
+                ↓
+              </span>
+            </button>
+
+            @if (padroesMultiploAberto()) {
+              <div id="padroes-envio-multiplo" class="accordion-enter border-t border-primary-300/10 p-4">
+                <div class="grid gap-3 md:grid-cols-[10rem_1fr_auto] md:items-end">
+                  <div>
+                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" for="valor-padrao-multiplo">
+                      Valor padrão
+                    </label>
+                    <input
+                      id="valor-padrao-multiplo"
+                      class="mt-2 h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputmode="numeric"
+                      placeholder="Moedas"
+                      [value]="valorPadraoMultiplo() ?? ''"
+                      (input)="atualizarValorPadraoMultiplo($event)"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" for="motivo-padrao-multiplo">
+                      Motivo padrão
+                    </label>
+                    <input
+                      id="motivo-padrao-multiplo"
+                      class="mt-2 h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      type="text"
+                      placeholder="Motivo para aplicar aos selecionados"
+                      [value]="motivoPadraoMultiplo()"
+                      (input)="atualizarMotivoPadraoMultiplo($event)"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="h-12 rounded-full border border-primary-300/25 px-4 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                    (click)="aplicarPadroesMultiplo()"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="alunos-lista-scroll mt-5 flex-1 space-y-3 overflow-y-auto pr-1">
+            @for (item of alunosSelecionadosLista(); track item.aluno.id) {
+              <article class="rounded-3xl border border-primary-300/12 bg-night-950/50 p-4">
+                <div class="grid gap-3 lg:grid-cols-[1fr_9rem_1.4fr] lg:items-start">
+                  <div>
+                    <h3 class="font-brand text-lg font-bold text-white">{{ item.aluno.nome }}</h3>
+                    <p class="mt-1 text-sm text-slate-400">{{ item.aluno.curso }} · {{ item.aluno.instituicao }}</p>
+                  </div>
+                  <div>
+                    <label class="sr-only" [for]="'valor-multiplo-' + item.aluno.id">
+                      Moedas para {{ item.aluno.nome }}
+                    </label>
+                    <input
+                      class="w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputmode="numeric"
+                      placeholder="Moedas"
+                      [id]="'valor-multiplo-' + item.aluno.id"
+                      [value]="item.valor ?? ''"
+                      (input)="atualizarValorMultiplo(item.aluno.id, $event)"
+                    />
+                  </div>
+                  <div>
+                    <label class="sr-only" [for]="'motivo-multiplo-' + item.aluno.id">
+                      Motivo para {{ item.aluno.nome }}
+                    </label>
+                    <textarea
+                      class="min-h-20 w-full resize-y rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      placeholder="Motivo"
+                      [id]="'motivo-multiplo-' + item.aluno.id"
+                      [value]="item.motivo"
+                      (input)="atualizarMotivoMultiplo(item.aluno.id, $event)"
+                    ></textarea>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+
+          <div class="mt-5 flex flex-col gap-3 border-t border-primary-300/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm text-slate-300">
+              <p>Total: <strong class="text-primary-100">{{ totalEnvioMultiplo() }} moedas</strong></p>
+              <p>Saldo após envio: <strong class="text-primary-100">{{ saldoAposEnvioMultiplo() }} moedas</strong></p>
+            </div>
+            <div class="flex flex-col-reverse gap-3 sm:flex-row">
+              <button
+                type="button"
+                class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                (click)="cancelarEnvioMultiplo()"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                [disabled]="!envioMultiploValido()"
+                (click)="abrirConfirmacaoMultipla()"
+              >
+                Revisar envio
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (etapaEnvioMultiplo() === 'confirmacao') {
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-night-950/80 px-5 py-8 backdrop-blur-sm"
+        role="presentation"
+      >
+        <section
+          class="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmar-envio-multiplo-title"
+        >
+          <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
+            Confirmação
+          </p>
+          <h2 id="confirmar-envio-multiplo-title" class="font-brand mt-3 text-2xl font-bold text-white">
+            Confirmar envio múltiplo
+          </h2>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            Revise os {{ totalSelecionados() }} envios antes de confirmar a transferência.
+          </p>
+
+          <div class="alunos-lista-scroll mt-5 flex-1 space-y-3 overflow-y-auto pr-1">
+            @for (item of alunosSelecionadosLista(); track item.aluno.id) {
+              <article class="rounded-3xl border border-primary-300/12 bg-night-950/55 p-4 text-sm">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 class="font-brand text-lg font-bold text-white">{{ item.aluno.nome }}</h3>
+                    <p class="mt-1 text-slate-400">{{ item.motivo }}</p>
+                  </div>
+                  <span class="rounded-full bg-primary-500/15 px-3 py-1 font-semibold text-primary-100">
+                    {{ item.valor }} moedas
+                  </span>
+                </div>
+              </article>
+            }
+          </div>
+
+          <dl class="mt-5 grid gap-3 rounded-3xl border border-primary-300/12 bg-night-950/55 p-5 text-sm sm:grid-cols-3">
+            <div>
+              <dt class="text-slate-400">Alunos</dt>
+              <dd class="mt-1 font-bold text-white">{{ totalSelecionados() }}</dd>
+            </div>
+            <div>
+              <dt class="text-slate-400">Total</dt>
+              <dd class="mt-1 font-bold text-primary-100">{{ totalEnvioMultiplo() }} moedas</dd>
+            </div>
+            <div>
+              <dt class="text-slate-400">Saldo após envio</dt>
+              <dd class="mt-1 font-bold text-primary-100">{{ saldoAposEnvioMultiplo() }} moedas</dd>
+            </div>
+          </dl>
+
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:text-slate-500"
+              [disabled]="enviandoMoedas()"
+              (click)="voltarParaPreenchimentoMultiplo()"
+            >
+              Voltar
+            </button>
+            <button
+              type="button"
+              class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              [disabled]="enviandoMoedas() || !envioMultiploValido()"
+              (click)="confirmarEnvioMultiplo()"
+            >
+              {{ enviandoMoedas() ? 'Enviando...' : 'Confirmar envio' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
 
     @if (motivoPendente(); as motivo) {
       <div
