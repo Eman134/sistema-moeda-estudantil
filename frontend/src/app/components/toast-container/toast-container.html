@@ -1,0 +1,36 @@
+@if (toasts().length > 0) {
+  <div
+    class="fixed bottom-6 left-1/2 z-[100] flex w-full max-w-md -translate-x-1/2 flex-col gap-3 px-4"
+    aria-live="polite"
+    aria-label="Notificações"
+  >
+    @for (toast of toasts(); track toast.id) {
+      <article
+        class="toast-enter relative overflow-hidden rounded-3xl border px-4 py-3 pr-12 shadow-2xl shadow-night-950/40 backdrop-blur-xl {{ obterClassesTipo(toast.tipo) }}"
+        [attr.role]="obterRole(toast)"
+      >
+        <span
+          class="absolute left-0 top-0 h-full w-1 {{ obterIndicadorTipo(toast.tipo) }}"
+          aria-hidden="true"
+        ></span>
+        <h2 class="text-sm font-bold text-white">{{ toast.titulo }}</h2>
+        @if (toast.mensagem) {
+          <p class="mt-1 text-sm leading-5">{{ toast.mensagem }}</p>
+        }
+        <button
+          type="button"
+          class="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-current transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          aria-label="Fechar notificação"
+          (click)="fecharToast(toast.id)"
+        >
+          <svg viewBox="0 0 20 20" class="h-4 w-4" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z"
+            />
+          </svg>
+        </button>
+      </article>
+    }
+  </div>
+}
