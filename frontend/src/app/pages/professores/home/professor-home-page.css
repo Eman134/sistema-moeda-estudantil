@@ -1,0 +1,21 @@
+.alunos-lista-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(85 212 230 / 35%) transparent;
+}
+
+.alunos-lista-scroll::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.alunos-lista-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alunos-lista-scroll::-webkit-scrollbar-thumb {
+  background: rgb(85 212 230 / 28%);
+  border-radius: 999px;
+}
+
+.alunos-lista-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(85 212 230 / 45%);
+}

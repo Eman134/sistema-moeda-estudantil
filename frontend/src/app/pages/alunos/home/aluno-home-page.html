@@ -15,7 +15,7 @@
       <p class="mt-4 max-w-3xl text-base leading-7 text-slate-300">
         Use suas moedas para comprar benefícios oferecidos por empresas parceiras. Seu saldo atual é
         de
-        <strong class="text-primary-100">{{ saldoAluno() }} moedas</strong>.
+        <strong class="text-primary-100">{{ saldoAluno() ?? 0 }} moedas</strong>.
       </p>
     </div>
 
@@ -39,7 +39,7 @@
           <button
             type="button"
             class="mt-6 rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-            [disabled]="beneficio.custoMoedas > saldoAluno()"
+            [disabled]="beneficio.custoMoedas > (saldoAluno() ?? 0)"
           >
             Comprar benefício
           </button>

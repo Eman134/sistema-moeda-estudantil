@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,7 +54,7 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Token válido"),
             @ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
     })
-    public ResponseEntity<AccessValidationResponseDto> validateAccess(Jwt jwt) {
+    public ResponseEntity<AccessValidationResponseDto> validateAccess(@AuthenticationPrincipal Jwt jwt) {
         String perfil = jwt.getClaimAsString("perfil");
         return ResponseEntity.ok(new AccessValidationResponseDto(true, jwt.getSubject(), perfil));
     }

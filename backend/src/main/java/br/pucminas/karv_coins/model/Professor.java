@@ -11,4 +11,5 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class Professor extends Usuario {
     private String departamento;
+    private Double saldo = 0.0;
 }

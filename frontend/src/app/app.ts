@@ -3,12 +3,14 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { Header, HeaderActionVariant, HeaderNavItem } from './components/header/header';
+import { ToastContainer } from './components/toast-container/toast-container';
+import { AlunosService } from './services/alunos.service';
 import { AuthService } from './services/auth.service';
-import { DadosMockService } from './services/dados-mock.service';
+import { ProfessoresService } from './services/professores.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header],
+  imports: [RouterOutlet, Header, ToastContainer],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,7 +18,8 @@ import { DadosMockService } from './services/dados-mock.service';
 export class App {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
-  private readonly dadosMockService = inject(DadosMockService);
+  private readonly alunosService = inject(AlunosService);
+  private readonly professoresService = inject(ProfessoresService);
 
   protected readonly currentUrl = signal(this.router.url);
   protected readonly isAuthPage = computed(() => this.currentUrl().startsWith('/auth'));
@@ -34,9 +37,13 @@ export class App {
   protected readonly saldoHeader = computed(() => {
     switch (this.authService.perfilAtual()) {
       case 'ALUNO':
-        return `Saldo: ${this.dadosMockService.saldoAluno()} moedas`;
+        return this.alunosService.saldoAluno() === null
+          ? null
+          : `Saldo: ${this.alunosService.saldoAluno()} moedas`;
       case 'PROFESSOR':
-        return `Saldo: ${this.dadosMockService.saldoProfessor()} moedas`;
+        return this.professoresService.saldoProfessor() === null
+          ? null
+          : `Saldo: ${this.professoresService.saldoProfessor()} moedas`;
       default:
         return null;
     }

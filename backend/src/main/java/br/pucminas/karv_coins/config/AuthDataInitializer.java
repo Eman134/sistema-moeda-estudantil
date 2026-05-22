@@ -55,6 +55,7 @@ public class AuthDataInitializer {
             professor.setSenha(passwordEncoder.encode("Teste@123"));
             professor.setPerfil(PerfilUsuario.PROFESSOR);
             professor.setDepartamento("Computacao");
+            professor.setSaldo(1000.0);
             usuarioRepository.save(professor);
             return;
         }
@@ -65,6 +66,7 @@ public class AuthDataInitializer {
         professor.setSenha(passwordEncoder.encode("Teste@123"));
         professor.setPerfil(PerfilUsuario.PROFESSOR);
         professor.setDepartamento("Computacao");
+        professor.setSaldo(1000.0);
         usuarioRepository.save(professor);
     }
 

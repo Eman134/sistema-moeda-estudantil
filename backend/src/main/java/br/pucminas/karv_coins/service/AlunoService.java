@@ -3,11 +3,16 @@ package br.pucminas.karv_coins.service;
 import br.pucminas.karv_coins.dto.request.AtualizarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.request.CriarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.response.AlunoResponseDto;
+import br.pucminas.karv_coins.dto.response.AlunoResumoResponseDto;
+import br.pucminas.karv_coins.dto.response.PaginaResponseDto;
 import br.pucminas.karv_coins.model.Aluno;
 import br.pucminas.karv_coins.model.PerfilUsuario;
 import br.pucminas.karv_coins.repository.AlunoRepository;
 import br.pucminas.karv_coins.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +64,38 @@ public class AlunoService {
     }
 
 
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('PROFESSOR')")
+    public PaginaResponseDto<AlunoResumoResponseDto> listarPaginado(String search, int page, int size) {
+        int paginaNormalizada = Math.max(page, 0);
+        int tamanhoNormalizado = Math.min(Math.max(size, 1), 50);
+        String filtro = search == null || search.isBlank() ? null : search.trim();
+        PageRequest pageRequest = PageRequest.of(
+                paginaNormalizada,
+                tamanhoNormalizado,
+                Sort.by(Sort.Direction.ASC, "nome")
+        );
+
+        if (filtro == null) {
+            return PaginaResponseDto.from(alunoRepository
+                    .findAll(pageRequest)
+                    .map(AlunoResumoResponseDto::from));
+        }
+
+        return PaginaResponseDto.from(alunoRepository
+                .buscarComFiltro("%" + filtro.toLowerCase() + "%", pageRequest)
+                .map(AlunoResumoResponseDto::from));
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ALUNO')")
+    public AlunoResumoResponseDto buscarMeuResumo(String email) {
+        Aluno aluno = alunoRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado."));
+
+        return AlunoResumoResponseDto.from(aluno);
+    }
 
     @Transactional(readOnly = true)
     public List<AlunoResponseDto> listarTodos() {

@@ -3,6 +3,8 @@ package br.pucminas.karv_coins.controller;
 import br.pucminas.karv_coins.dto.request.AtualizarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.request.CriarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.response.AlunoResponseDto;
+import br.pucminas.karv_coins.dto.response.AlunoResumoResponseDto;
+import br.pucminas.karv_coins.dto.response.PaginaResponseDto;
 import br.pucminas.karv_coins.service.AlunoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -11,6 +13,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -57,9 +62,24 @@ public class AlunoController {
 
 
     @GetMapping
-    @Operation(summary = "Listar todos os alunos")
-    public ResponseEntity<List<AlunoResponseDto>> listarTodos() {
-        return ResponseEntity.ok(alunoService.listarTodos());
+    @Operation(summary = "Listar alunos com paginação e busca")
+    public ResponseEntity<PaginaResponseDto<AlunoResumoResponseDto>> listarTodos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(alunoService.listarPaginado(search, page, size));
+    }
+
+
+    @GetMapping("/me/resumo")
+    @Operation(summary = "Buscar resumo do aluno autenticado")
+    public ResponseEntity<Object> buscarMeuResumo(@AuthenticationPrincipal Jwt jwt) {
+        try {
+            return ResponseEntity.ok(alunoService.buscarMeuResumo(jwt.getSubject()));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
 
