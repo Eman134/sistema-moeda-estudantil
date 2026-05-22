@@ -19,32 +19,82 @@
       </p>
     </div>
 
-    <div class="mt-8 grid gap-5 md:grid-cols-3">
-      @for (beneficio of beneficiosDisponiveis; track beneficio.id) {
-        <article
-          class="flex min-h-full flex-col rounded-3xl border border-primary-300/15 bg-night-900/80 p-6 shadow-xl shadow-primary-950/20"
-        >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-medium text-primary-100">{{ beneficio.empresa }}</p>
-              <h2 class="font-brand mt-2 text-xl font-bold text-white">{{ beneficio.nome }}</h2>
-            </div>
-            <span
-              class="rounded-full text-nowrap bg-primary-500/15 px-3 py-1 text-sm font-semibold text-primary-100"
-            >
-              {{ beneficio.custoMoedas }} moedas
-            </span>
+    <div class="vantagens-lista-scroll mt-8 max-h-[42rem] overflow-y-auto pr-1">
+      <div class="grid gap-5 md:grid-cols-3">
+        @if (carregandoBeneficios()) {
+          <p class="rounded-3xl border border-primary-300/15 bg-night-900/80 p-6 text-sm text-slate-300 md:col-span-3">
+            Carregando vantagens...
+          </p>
+        } @else if (beneficiosDisponiveis().length === 0) {
+          <div class="rounded-3xl border border-primary-300/15 bg-night-900/80 p-8 text-sm text-slate-300 md:col-span-3">
+            <h2 class="font-brand text-2xl font-bold text-white">Nenhuma vantagem disponível</h2>
+            <p class="mt-3 leading-6">
+              Assim que uma empresa parceira cadastrar uma vantagem, ela aparecerá aqui para consulta.
+            </p>
           </div>
-          <p class="mt-4 flex-1 text-sm leading-6 text-slate-300">{{ beneficio.descricao }}</p>
-          <button
-            type="button"
-            class="mt-6 rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-            [disabled]="beneficio.custoMoedas > (saldoAluno() ?? 0)"
-          >
-            Comprar benefício
-          </button>
+        }
+
+        @for (beneficio of beneficiosDisponiveis(); track beneficio.id) {
+        <article
+          class="flex min-h-full flex-col overflow-hidden rounded-3xl border border-primary-300/15 bg-night-900/80 shadow-xl shadow-primary-950/20"
+        >
+          <img
+            class="h-44 w-full object-cover"
+            [src]="beneficio.fotoUrl"
+            [alt]="'Imagem da vantagem ' + beneficio.descricao"
+          />
+          <div class="flex flex-1 flex-col p-6">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium text-primary-100">{{ beneficio.nomeEmpresa }}</p>
+                <h2 class="font-brand mt-2 text-xl font-bold text-white">{{ beneficio.descricao }}</h2>
+              </div>
+              <span
+                class="rounded-full text-nowrap bg-primary-500/15 px-3 py-1 text-sm font-semibold text-primary-100"
+              >
+                {{ formatarMoedas(beneficio.custoMoedas) }}
+              </span>
+            </div>
+            <p class="mt-4 flex-1 text-sm leading-6 text-slate-300">{{ beneficio.descricao }}</p>
+            <button
+              type="button"
+              class="mt-6 rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              [disabled]="!podeResgatar(beneficio)"
+              (click)="iniciarResgate(beneficio)"
+            >
+              {{ podeResgatar(beneficio) ? 'Resgatar vantagem' : 'Saldo insuficiente' }}
+            </button>
+          </div>
         </article>
-      }
+        }
+      </div>
+    </div>
+
+    <div
+      class="mt-6 flex flex-col gap-3 border-t border-primary-300/10 pt-5 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span>{{ totalBeneficios() }} vantagens encontradas</span>
+      <div class="inline-flex items-center justify-center gap-3">
+        <button
+          type="button"
+          class="rounded-full border border-primary-300/20 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:border-slate-600 disabled:text-slate-500 disabled:hover:bg-transparent"
+          [disabled]="!podeVoltarPagina()"
+          (click)="paginaAnterior()"
+        >
+          Anterior
+        </button>
+        <span class="rounded-full bg-surface-950 px-4 py-2 text-primary-100">
+          Página {{ totalPaginas() === 0 ? 0 : paginaExibida() }} de {{ totalPaginas() }}
+        </span>
+        <button
+          type="button"
+          class="rounded-full border border-primary-300/20 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:border-slate-600 disabled:text-slate-500 disabled:hover:bg-transparent"
+          [disabled]="!podeAvancarPagina()"
+          (click)="proximaPagina()"
+        >
+          Próxima
+        </button>
+      </div>
     </div>
   </section>
 </main>

@@ -1,28 +1,176 @@
 <main class="px-5 py-10 sm:px-8 lg:py-14">
   <section class="mx-auto w-full max-w-6xl" aria-labelledby="empresa-beneficios-title">
-    <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">Gerenciar benefícios</p>
-    <h1 id="empresa-beneficios-title" class="font-brand mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-      Benefícios publicados
-    </h1>
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">Gerenciar benefícios</p>
+        <h1 id="empresa-beneficios-title" class="font-brand mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          Benefícios publicados
+        </h1>
+        <p class="mt-4 max-w-3xl text-base leading-7 text-slate-300">
+          Cadastre vantagens com descrição, custo em moedas e imagem para que os alunos possam resgatar posteriormente.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+        (click)="abrirCriacaoBeneficio()"
+      >
+        Adicionar benefício
+      </button>
+    </div>
 
     <div class="mt-8 grid gap-5 md:grid-cols-3">
-      @for (beneficio of beneficiosGerenciados; track beneficio.id) {
-        <article class="rounded-3xl border border-primary-300/15 bg-surface-900/75 p-6 shadow-xl shadow-primary-950/20">
-          <h2 class="font-brand text-xl font-bold text-white">{{ beneficio.nome }}</h2>
-          <dl class="mt-5 space-y-3 text-sm">
-            <div class="flex items-center justify-between gap-4">
-              <dt class="text-slate-400">Resgates</dt>
-              <dd class="font-semibold text-primary-100">{{ beneficio.resgates }}</dd>
-            </div>
-          </dl>
-          <button
-            type="button"
-            class="mt-6 rounded-full border border-primary-300/40 px-4 py-2 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
-          >
-            Editar benefício
-          </button>
+      @if (carregandoBeneficios()) {
+        <p class="rounded-3xl border border-primary-300/15 bg-surface-900/75 p-6 text-sm text-slate-300 md:col-span-3">
+          Carregando benefícios...
+        </p>
+      } @else if (beneficiosGerenciados().length === 0) {
+        <div class="rounded-3xl border border-primary-300/15 bg-surface-900/75 p-8 text-sm text-slate-300 md:col-span-3">
+          <h2 class="font-brand text-2xl font-bold text-white">Nenhum benefício cadastrado</h2>
+          <p class="mt-3 leading-6">
+            Adicione o primeiro benefício para publicar uma vantagem vinculada à empresa logada.
+          </p>
+        </div>
+      }
+
+      @for (beneficio of beneficiosGerenciados(); track beneficio.id) {
+        <article class="overflow-hidden rounded-3xl border border-primary-300/15 bg-surface-900/75 shadow-xl shadow-primary-950/20">
+          <img
+            class="h-44 w-full object-cover"
+            [src]="beneficio.fotoUrl"
+            [alt]="'Imagem do benefício ' + beneficio.descricao"
+          />
+          <div class="p-6">
+            <h2 class="font-brand text-xl font-bold text-white">{{ beneficio.descricao }}</h2>
+            <dl class="mt-5 space-y-3 text-sm">
+              <div class="flex items-center justify-between gap-4">
+                <dt class="text-slate-400">Custo</dt>
+                <dd class="font-semibold text-primary-100">{{ formatarMoedas(beneficio.custoMoedas) }}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              class="mt-6 rounded-full border border-primary-300/40 px-4 py-2 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+              (click)="abrirEdicaoBeneficio(beneficio)"
+            >
+              Editar benefício
+            </button>
+          </div>
         </article>
       }
     </div>
   </section>
+
+  @if (modalAberto()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-night-950/80 px-5 py-8 backdrop-blur-sm"
+      role="presentation"
+    >
+      <section
+        class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="beneficio-modal-title"
+      >
+        <div class="flex items-start justify-between gap-5">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">Vantagem</p>
+            <h2 id="beneficio-modal-title" class="font-brand mt-3 text-3xl font-bold text-white">
+              {{ tituloModal() }}
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="rounded-full border border-primary-300/25 px-4 py-2 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900 disabled:cursor-not-allowed disabled:text-slate-500"
+            [disabled]="salvandoBeneficio()"
+            (click)="fecharModal()"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <form class="mt-6 space-y-5" [formGroup]="beneficioForm" (ngSubmit)="salvarBeneficio()">
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" for="beneficio-descricao">
+              Descrição
+            </label>
+            <textarea
+              id="beneficio-descricao"
+              class="mt-2 min-h-28 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+              placeholder="Ex.: Desconto de 20% na cafeteria do campus"
+              formControlName="descricao"
+            ></textarea>
+            @if (campoInvalido('descricao')) {
+              <p class="mt-2 text-sm text-red-300">Informe a descrição do benefício.</p>
+            }
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" for="beneficio-foto">
+              URL da imagem
+            </label>
+            <input
+              id="beneficio-foto"
+              class="mt-2 h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+              type="url"
+              placeholder="https://exemplo.com/imagem.jpg"
+              formControlName="fotoUrl"
+            />
+            @if (campoInvalido('fotoUrl')) {
+              <p class="mt-2 text-sm text-red-300">Informe a URL da imagem do benefício.</p>
+            }
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" for="beneficio-custo">
+              Custo em moedas
+            </label>
+            <input
+              id="beneficio-custo"
+              class="mt-2 h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="100"
+              formControlName="custoMoedas"
+            />
+            @if (campoInvalido('custoMoedas')) {
+              <p class="mt-2 text-sm text-red-300">Informe um custo maior que zero.</p>
+            }
+          </div>
+
+          @if (fotoUrlPreview()) {
+            <div class="rounded-3xl border border-primary-300/15 bg-night-950/55 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Prévia da imagem</p>
+              <img
+                class="mt-3 max-h-56 w-full rounded-2xl object-cover"
+                [src]="fotoUrlPreview()"
+                alt="Prévia da imagem informada para o benefício"
+              />
+            </div>
+          }
+
+          <div class="flex flex-col-reverse gap-3 border-t border-primary-300/10 pt-5 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-full border border-primary-300/25 px-5 py-3 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900 disabled:cursor-not-allowed disabled:text-slate-500"
+              [disabled]="salvandoBeneficio()"
+              (click)="fecharModal()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              [disabled]="salvandoBeneficio()"
+            >
+              {{ salvandoBeneficio() ? 'Salvando...' : textoBotaoSalvar() }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
 </main>
