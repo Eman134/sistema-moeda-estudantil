@@ -17,8 +17,8 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auth/auth').then((component) => component.AuthPage),
   },
   {
-    path: 'home',
-    title: 'Home | KarvCoins',
+    path: 'painel',
+    title: 'Painel | KarvCoins',
     canActivate: [AutenticadoGuard],
     loadComponent: () =>
       import('./pages/home/home-page').then((component) => component.HomePage),

@@ -13,6 +13,6 @@ export class ExtratoGuard implements CanActivate {
       return this.router.parseUrl('/auth');
     }
 
-    return this.authService.perfilAtual() === 'EMPRESA' ? this.router.parseUrl('/home') : true;
+    return this.authService.perfilAtual() === 'EMPRESA' ? this.router.parseUrl('/painel') : true;
   }
 }

@@ -52,17 +52,20 @@ export class App {
     switch (this.authService.perfilAtual()) {
       case 'ALUNO':
         return [
-          { label: 'Home', rota: '/home' },
+          { label: 'Home', rota: '/' },
+          { label: 'Painel', rota: '/painel' },
           { label: 'Extrato', rota: '/extrato' },
         ];
       case 'PROFESSOR':
         return [
-          { label: 'Home', rota: '/home' },
+          { label: 'Home', rota: '/' },
+          { label: 'Painel', rota: '/painel' },
           { label: 'Extrato', rota: '/extrato' },
         ];
       case 'EMPRESA':
         return [
-          { label: 'Home', rota: '/home' },
+          { label: 'Home', rota: '/' },
+          { label: 'Painel', rota: '/painel' },
           { label: 'Gerenciar Benefícios', rota: '/beneficios' },
         ];
       default:

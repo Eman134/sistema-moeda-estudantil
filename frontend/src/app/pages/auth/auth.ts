@@ -226,7 +226,7 @@ export class AuthPage {
     this.authService.fazerLogin(this.formularioLogin.getRawValue()).subscribe({
       next: () => {
         this.loginCarregando.set(false);
-        void this.router.navigateByUrl('/home', { replaceUrl: true });
+        void this.router.navigateByUrl('/painel', { replaceUrl: true });
       },
       error: (erro: HttpErrorResponse) => {
         this.loginCarregando.set(false);
