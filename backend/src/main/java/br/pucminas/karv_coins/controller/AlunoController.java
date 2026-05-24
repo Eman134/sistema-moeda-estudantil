@@ -4,8 +4,10 @@ import br.pucminas.karv_coins.dto.request.AtualizarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.request.CriarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.response.AlunoResponseDto;
 import br.pucminas.karv_coins.dto.response.AlunoResumoResponseDto;
+import br.pucminas.karv_coins.dto.response.ExtratoResponseDto;
 import br.pucminas.karv_coins.dto.response.PaginaResponseDto;
 import br.pucminas.karv_coins.service.AlunoService;
+import br.pucminas.karv_coins.service.ExtratoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,9 +37,11 @@ import java.util.stream.Collectors;
 public class AlunoController {
 
     private final AlunoService alunoService;
+    private final ExtratoService extratoService;
 
-    public AlunoController(AlunoService alunoService) {
+    public AlunoController(AlunoService alunoService, ExtratoService extratoService) {
         this.alunoService = alunoService;
+        this.extratoService = extratoService;
     }
 
 
@@ -77,6 +81,22 @@ public class AlunoController {
     public ResponseEntity<Object> buscarMeuResumo(@AuthenticationPrincipal Jwt jwt) {
         try {
             return ResponseEntity.ok(alunoService.buscarMeuResumo(jwt.getSubject()));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/me/extrato")
+    @Operation(summary = "Consultar extrato do aluno autenticado")
+    public ResponseEntity<Object> consultarMeuExtrato(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        try {
+            ExtratoResponseDto response = extratoService.consultarExtratoAluno(jwt.getSubject(), page, size);
+            return ResponseEntity.ok(response);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }

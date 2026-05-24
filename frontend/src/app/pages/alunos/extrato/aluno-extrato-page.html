@@ -5,24 +5,41 @@
       Movimentações de moedas
     </h1>
 
-    <div class="mt-8 space-y-4">
-      @for (lancamento of lancamentosAluno; track lancamento.id) {
-        <article class="rounded-3xl border border-primary-300/15 bg-surface-900/75 p-5 shadow-xl shadow-primary-950/20">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 class="font-brand text-lg font-bold text-white">{{ lancamento.descricao }}</h2>
-              <p class="mt-1 text-sm text-slate-400">{{ lancamento.origem }} · {{ lancamento.data }}</p>
+    @if (saldo() !== null) {
+      <p class="mt-4 text-lg text-slate-300">
+        Saldo atual:
+        <strong class="text-primary-100">{{ saldo() }} moedas</strong>
+      </p>
+    }
+
+    @if (carregando()) {
+      <p class="mt-8 text-slate-400" role="status">Carregando extrato...</p>
+    } @else if (erro()) {
+      <p class="mt-8 text-red-300" role="alert">{{ erro() }}</p>
+    } @else if (lancamentos().length === 0) {
+      <p class="mt-8 text-slate-400">Nenhuma movimentação registrada ainda.</p>
+    } @else {
+      <div class="mt-8 space-y-4">
+        @for (lancamento of lancamentos(); track lancamento.id) {
+          <article class="rounded-3xl border border-primary-300/15 bg-surface-900/75 p-5 shadow-xl shadow-primary-950/20">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="font-brand text-lg font-bold text-white">{{ lancamento.descricao }}</h2>
+                <p class="mt-1 text-sm text-slate-400">
+                  {{ lancamento.contraparte }} · {{ lancamento.data | date: 'dd/MM/yyyy HH:mm' }}
+                </p>
+              </div>
+              <strong
+                class="text-lg"
+                [class.text-primary-100]="lancamento.quantidadeMoedas > 0"
+                [class.text-red-300]="lancamento.quantidadeMoedas < 0"
+              >
+                {{ lancamento.quantidadeMoedas > 0 ? '+' : '' }}{{ lancamento.quantidadeMoedas }} moedas
+              </strong>
             </div>
-            <strong
-              class="text-lg"
-              [class.text-primary-100]="lancamento.quantidadeMoedas > 0"
-              [class.text-red-300]="lancamento.quantidadeMoedas < 0"
-            >
-              {{ lancamento.quantidadeMoedas > 0 ? '+' : '' }}{{ lancamento.quantidadeMoedas }} moedas
-            </strong>
-          </div>
-        </article>
-      }
-    </div>
+          </article>
+        }
+      </div>
+    }
   </section>
 </main>
