@@ -1,211 +1,323 @@
 <main class="px-5 py-10 sm:px-8 lg:py-14">
-  <section class="mx-auto w-full max-w-7xl" aria-labelledby="professor-home-title">
-    <div class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-      <aside
-        class="rounded-[2rem] border border-primary-300/15 bg-surface-900/75 p-7 shadow-2xl shadow-primary-950/25 sm:p-10"
+  <section class="mx-auto w-full max-w-5xl" aria-labelledby="professor-home-title">
+    <div class="mb-8">
+      <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
+        Área do professor
+      </p>
+      <h1
+        id="professor-home-title"
+        class="font-brand mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl"
       >
-        <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
-          Área do professor
-        </p>
-        <h1
-          id="professor-home-title"
-          class="font-brand mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl"
-        >
-          Distribuição de moedas
-        </h1>
-        <p class="mt-4 text-base leading-7 text-slate-300">
-          Visualize alunos relacionados à sua matéria, curso ou departamento e reconheça desempenho
-          acadêmico com moedas.
-        </p>
-        <dl class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          <div class="rounded-3xl border border-primary-300/15 bg-night-950/55 p-5">
-            <dt class="text-sm text-slate-400">Saldo disponível</dt>
-            <dd class="mt-2 text-3xl font-bold text-primary-100">
-              {{ formatarMoedas(saldoProfessor()) }}
-            </dd>
-          </div>
-          <div class="rounded-3xl border border-primary-300/15 bg-night-950/55 p-5">
-            <dt class="text-sm text-slate-400">Alunos relacionados</dt>
-            <dd class="mt-2 text-3xl font-bold text-primary-100">
-              {{ totalAlunosRelacionados() }}
-            </dd>
-          </div>
-        </dl>
-      </aside>
+        Distribuição de moedas
+      </h1>
+      <p class="mt-2 max-w-2xl text-base leading-7 text-slate-400">
+        Clique em um aluno para enviar moedas ou selecione vários de uma vez.
+      </p>
+    </div>
 
+    <div class="mb-8 grid gap-4 sm:grid-cols-2">
       <div
-        class="rounded-[2rem] border border-primary-300/15 bg-night-900/80 p-5 shadow-2xl shadow-primary-950/25 sm:p-7"
+        class="kpi-card group relative overflow-hidden rounded-2xl border border-primary-300/15 bg-surface-900/75 p-5 shadow-lg shadow-primary-950/20"
       >
-        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="font-brand text-2xl font-bold text-white">Envio de moedas</h2>
-            <p class="mt-1 text-sm text-slate-400">
-              Busque, revise e envie moedas com confirmação antes da transferência.
-            </p>
-          </div>
-          <button
-            type="button"
-            class="rounded-full border border-primary-300/25 px-4 py-2 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
-            (click)="abrirEnvioEmMassa()"
-          >
-            Enviar para vários alunos
-          </button>
-        </div>
-
-        @if (etapaEnvioMultiplo() === 'selecao') {
-          <div
-            class="mb-5 flex flex-col gap-3 rounded-3xl border border-primary-300/15 bg-primary-500/10 p-4 text-sm text-primary-100 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <span class="font-semibold">
-              {{ totalSelecionados() }} aluno{{ totalSelecionados() === 1 ? '' : 's' }} selecionado{{ totalSelecionados() === 1 ? '' : 's' }}
-            </span>
-            <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="rounded-full border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
-                (click)="cancelarEnvioMultiplo()"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="rounded-full border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:text-slate-500"
-                [disabled]="totalSelecionados() === 0"
-                (click)="limparSelecaoMultipla()"
-              >
-                Limpar seleção
-              </button>
-              <button
-                type="button"
-                class="rounded-full bg-primary-500 px-4 py-2 font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-                [disabled]="totalSelecionados() < 2"
-                (click)="abrirPreenchimentoMultiplo()"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
-        }
-
-        <div class="mb-5">
-          <label class="sr-only" for="pesquisa-alunos">Pesquisar alunos</label>
-          <input
-            id="pesquisa-alunos"
-            class="w-full rounded-full border border-primary-300/15 bg-surface-950 px-5 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
-            type="search"
-            placeholder="Pesquisar alunos por nome, curso ou turma"
-            autocomplete="off"
-            [formControl]="pesquisaControl"
-          />
-        </div>
-
-        <div class="alunos-lista-scroll max-h-[34rem] space-y-4 overflow-y-auto pr-1">
-          @if (carregandoAlunos()) {
-            <p
-              class="rounded-3xl border border-primary-300/12 bg-surface-900/70 p-5 text-sm text-slate-300"
-            >
-              Carregando alunos...
-            </p>
-          } @else if (alunosRelacionados().length === 0) {
-            <p
-              class="rounded-3xl border border-primary-300/12 bg-surface-900/70 p-5 text-sm text-slate-300"
-            >
-              Nenhum aluno encontrado para a busca atual.
-            </p>
-          }
-
-          @for (aluno of alunosRelacionados(); track aluno.id) {
-            <article class="rounded-3xl border border-primary-300/12 bg-surface-900/70 p-5">
-              <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div class="flex gap-4">
-                  @if (etapaEnvioMultiplo() === 'selecao') {
-                    <div class="pt-1">
-                      <label class="sr-only" [for]="'selecionar-aluno-' + aluno.id">
-                        Selecionar {{ aluno.nome }} para envio múltiplo
-                      </label>
-                      <input
-                        class="h-5 w-5 rounded border-primary-300/40 bg-surface-950 text-primary-500 accent-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
-                        type="checkbox"
-                        [id]="'selecionar-aluno-' + aluno.id"
-                        [checked]="alunoEstaSelecionado(aluno.id)"
-                        (change)="alternarSelecaoAluno(aluno, $event)"
-                      />
-                    </div>
-                  }
-                  <div>
-                    <h2 class="font-brand text-xl font-bold text-white">{{ aluno.nome }}</h2>
-                    <p class="mt-1 text-sm text-slate-400">
-                      {{ aluno.curso }} · {{ aluno.instituicao }}
-                    </p>
-                    <p class="mt-3 text-sm font-medium text-primary-100">
-                      Saldo do aluno: {{ aluno.saldo }} moedas
-                    </p>
-                  </div>
-                </div>
-                @if (etapaEnvioMultiplo() !== 'selecao') {
-                  <div
-                    class="flex w-full flex-col gap-2 sm:w-44"
-                    aria-label="Distribuir moedas para {{ aluno.nome }}"
-                  >
-                    <div>
-                      <label class="sr-only" [for]="'moedas-aluno-' + aluno.id">
-                        Quantidade de moedas para {{ aluno.nome }}
-                      </label>
-                      <input
-                        class="w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
-                        type="number"
-                        min="1"
-                        step="1"
-                        inputmode="numeric"
-                        placeholder="Moedas"
-                        [id]="'moedas-aluno-' + aluno.id"
-                        [value]="obterQuantidadeMoedas(aluno.id) ?? ''"
-                        (input)="atualizarQuantidadeMoedas(aluno.id, $event)"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      class="w-full rounded-full bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 text-nowrap focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-                      [disabled]="!podeDistribuirMoedas(aluno.id)"
-                      (click)="prepararEnvioMoedas(aluno)"
-                    >
-                      Enviar moedas
-                    </button>
-                  </div>
-                }
-              </div>
-            </article>
-          }
-        </div>
-
         <div
-          class="mt-6 flex flex-col gap-3 border-t border-primary-300/10 pt-5 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <span> {{ totalAlunosRelacionados() }} alunos encontrados </span>
-          <div class="inline-flex items-center justify-center gap-3">
-            <button
-              type="button"
-              class="rounded-full border border-primary-300/20 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:border-slate-600 disabled:text-slate-500 disabled:hover:bg-transparent"
-              [disabled]="!podeVoltarPagina()"
-              (click)="paginaAnterior()"
-            >
-              Anterior
-            </button>
-            <span class="rounded-full bg-surface-950 px-4 py-2 text-primary-100">
-              Página {{ totalPaginas() === 0 ? 0 : paginaExibida() }} de {{ totalPaginas() }}
-            </span>
-            <button
-              type="button"
-              class="rounded-full border border-primary-300/20 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:border-slate-600 disabled:text-slate-500 disabled:hover:bg-transparent"
-              [disabled]="!podeAvancarPagina()"
-              (click)="proximaPagina()"
-            >
-              Próxima
-            </button>
-          </div>
-        </div>
+          class="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary-400/8 transition-transform duration-500 group-hover:scale-150"
+        ></div>
+        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+          Saldo disponível
+        </dt>
+        <dd class="mt-2 text-3xl font-bold text-primary-100">
+          {{ formatarMoedas(saldoProfessor()) }}
+        </dd>
+      </div>
+      <div
+        class="kpi-card group relative overflow-hidden rounded-2xl border border-primary-300/15 bg-surface-900/75 p-5 shadow-lg shadow-primary-950/20"
+      >
+        <div
+          class="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary-400/8 transition-transform duration-500 group-hover:scale-150"
+        ></div>
+        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+          Alunos relacionados
+        </dt>
+        <dd class="mt-2 text-3xl font-bold text-primary-100">
+          {{ totalAlunosRelacionados() }}
+        </dd>
       </div>
     </div>
+
+    <div
+      class="mb-5 rounded-2xl border border-primary-300/12 bg-surface-900/60 p-4"
+    >
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label class="sr-only" for="pesquisa-alunos">Pesquisar alunos</label>
+        <input
+          id="pesquisa-alunos"
+          class="w-full rounded-xl border border-primary-300/12 bg-night-950/60 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30 sm:max-w-sm"
+          type="search"
+          placeholder="Pesquisar por nome, curso ou turma…"
+          autocomplete="off"
+          [formControl]="pesquisaControl"
+        />
+        @if (etapaEnvioMultiplo() === 'inativo') {
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-primary-300/20 px-4 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+            (click)="abrirEnvioEmMassa()"
+          >
+            <span class="text-base" aria-hidden="true">☑</span>
+            Selecionar vários
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (etapaEnvioMultiplo() === 'selecao') {
+      <div
+        class="multi-select-bar mb-5 flex flex-col gap-3 rounded-2xl border border-primary-400/25 bg-primary-500/10 p-4 text-sm text-primary-100 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between"
+      >
+        <span class="font-semibold">
+          {{ totalSelecionados() }} aluno{{ totalSelecionados() === 1 ? '' : 's' }}
+          selecionado{{ totalSelecionados() === 1 ? '' : 's' }}
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="rounded-xl border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+            (click)="cancelarEnvioMultiplo()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-primary-300/25 px-4 py-2 font-semibold transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:text-slate-500"
+            [disabled]="totalSelecionados() === 0"
+            (click)="limparSelecaoMultipla()"
+          >
+            Limpar
+          </button>
+          <button
+            type="button"
+            class="rounded-xl bg-primary-500 px-4 py-2 font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+            [disabled]="totalSelecionados() < 2"
+            (click)="abrirPreenchimentoMultiplo()"
+          >
+            Continuar →
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="alunos-lista-scroll max-h-[38rem] space-y-3 overflow-y-auto pr-1">
+      @if (carregandoAlunos()) {
+        <div
+          class="flex items-center justify-center rounded-2xl border border-primary-300/10 bg-surface-900/60 p-10"
+        >
+          <div class="loading-spinner mr-3"></div>
+          <span class="text-sm text-slate-300">Carregando alunos…</span>
+        </div>
+      } @else if (alunosRelacionados().length === 0) {
+        <div
+          class="rounded-2xl border border-primary-300/10 bg-surface-900/60 p-10 text-center text-sm text-slate-400"
+        >
+          Nenhum aluno encontrado para a busca atual.
+        </div>
+      }
+
+      @for (aluno of alunosRelacionados(); track aluno.id) {
+        <article
+          class="aluno-card group flex items-center gap-4 rounded-2xl border border-primary-300/10 bg-surface-900/60 p-4 transition-all duration-200"
+          [class.aluno-card--selecionado]="etapaEnvioMultiplo() === 'selecao' && alunoEstaSelecionado(aluno.id)"
+          [class.cursor-pointer]="etapaEnvioMultiplo() !== 'selecao'"
+          [attr.role]="etapaEnvioMultiplo() !== 'selecao' ? 'button' : null"
+          [attr.tabindex]="etapaEnvioMultiplo() !== 'selecao' ? 0 : null"
+          (click)="
+            etapaEnvioMultiplo() === 'selecao'
+              ? null
+              : abrirEnvioIndividual(aluno)
+          "
+          (keydown.enter)="
+            etapaEnvioMultiplo() !== 'selecao' ? abrirEnvioIndividual(aluno) : null
+          "
+        >
+          @if (etapaEnvioMultiplo() === 'selecao') {
+            <label
+              class="relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center"
+              [for]="'selecionar-aluno-' + aluno.id"
+              (click)="$event.stopPropagation()"
+            >
+              <input
+                class="peer h-5 w-5 cursor-pointer rounded border-primary-300/40 bg-surface-950 text-primary-500 accent-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+                type="checkbox"
+                [id]="'selecionar-aluno-' + aluno.id"
+                [checked]="alunoEstaSelecionado(aluno.id)"
+                (change)="alternarSelecaoAluno(aluno, $event)"
+              />
+            </label>
+          }
+
+          <div
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-500/15 text-sm font-bold text-primary-200 transition-colors duration-200 group-hover:bg-primary-500/25"
+          >
+            {{ obterIniciaisAluno(aluno.nome) }}
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <h2 class="truncate text-[0.95rem] font-semibold text-white">
+              {{ aluno.nome }}
+            </h2>
+            <p class="mt-0.5 truncate text-xs text-slate-400">
+              {{ aluno.curso }} · {{ aluno.instituicao }}
+            </p>
+          </div>
+
+          <div class="shrink-0 text-right">
+            <span
+              class="inline-block rounded-lg bg-primary-500/10 px-3 py-1.5 text-sm font-semibold text-primary-200"
+            >
+              {{ aluno.saldo }}
+              <span class="text-xs font-normal text-primary-300/70">moedas</span>
+            </span>
+          </div>
+
+          @if (etapaEnvioMultiplo() !== 'selecao') {
+            <span
+              class="shrink-0 text-slate-600 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary-300"
+              aria-hidden="true"
+            >
+              →
+            </span>
+          }
+        </article>
+      }
+    </div>
+
+    <div
+      class="mt-5 flex flex-col gap-3 border-t border-primary-300/10 pt-4 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span>{{ totalAlunosRelacionados() }} alunos encontrados</span>
+      <div class="inline-flex items-center justify-center gap-2">
+        <button
+          type="button"
+          class="rounded-xl border border-primary-300/15 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-600 disabled:hover:bg-transparent"
+          [disabled]="!podeVoltarPagina()"
+          (click)="paginaAnterior()"
+        >
+          ←
+        </button>
+        <span class="rounded-xl bg-night-950/60 px-4 py-2 text-primary-100">
+          {{ totalPaginas() === 0 ? 0 : paginaExibida() }} / {{ totalPaginas() }}
+        </span>
+        <button
+          type="button"
+          class="rounded-xl border border-primary-300/15 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-600 disabled:hover:bg-transparent"
+          [disabled]="!podeAvancarPagina()"
+          (click)="proximaPagina()"
+        >
+          →
+        </button>
+      </div>
+    </div>
+
+    @if (envioIndividualAberto(); as envio) {
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-night-950/80 px-5 py-8 backdrop-blur-sm"
+        role="presentation"
+        (click)="fecharEnvioIndividual()"
+      >
+        <section
+          class="modal-enter w-full max-w-lg rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="envio-individual-title"
+          (click)="$event.stopPropagation()"
+        >
+          <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
+            Enviar moedas
+          </p>
+
+          <div class="mt-4 flex items-center gap-4">
+            <div
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-500/15 text-base font-bold text-primary-200"
+            >
+              {{ obterIniciaisAluno(envio.aluno.nome) }}
+            </div>
+            <div>
+              <h2
+                id="envio-individual-title"
+                class="font-brand text-xl font-bold text-white"
+              >
+                {{ envio.aluno.nome }}
+              </h2>
+              <p class="mt-0.5 text-sm text-slate-400">
+                {{ envio.aluno.curso }} · {{ envio.aluno.instituicao }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="mt-4 rounded-xl border border-primary-300/10 bg-night-950/50 px-4 py-3 text-sm"
+          >
+            <span class="text-slate-400">Saldo atual do aluno:</span>
+            <strong class="ml-1 text-primary-100">{{ envio.aluno.saldo }} moedas</strong>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <div>
+              <label
+                class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400"
+                for="envio-individual-valor"
+              >
+                Quantidade de moedas
+              </label>
+              <input
+                id="envio-individual-valor"
+                class="mt-2 h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                placeholder="Ex.: 10"
+                [value]="envio.valor ?? ''"
+                (input)="atualizarValorIndividual($event)"
+              />
+            </div>
+            <div>
+              <label
+                class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400"
+                for="envio-individual-motivo"
+              >
+                Motivo
+              </label>
+              <textarea
+                id="envio-individual-motivo"
+                class="mt-2 min-h-28 w-full resize-y rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                placeholder="Ex.: Participação excelente na aula, entrega antecipada do trabalho…"
+                [value]="envio.motivo"
+                (input)="atualizarMotivoIndividual($event)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+              (click)="fecharEnvioIndividual()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              [disabled]="!envioIndividualValido()"
+              (click)="confirmarEnvioIndividual()"
+            >
+              Revisar envio
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    }
 
     @if (etapaEnvioMultiplo() === 'preenchimento') {
       <div
@@ -213,7 +325,7 @@
         role="presentation"
       >
         <section
-          class="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          class="modal-enter flex max-h-[90vh] w-full max-w-4xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="preencher-envio-multiplo-title"
@@ -228,7 +340,7 @@
             Preencha os envios individualmente ou aplique um valor e motivo padrão para todos os alunos selecionados.
           </p>
 
-          <div class="mt-5 overflow-hidden rounded-3xl border border-primary-300/12 bg-night-950/55">
+          <div class="mt-5 overflow-hidden rounded-2xl border border-primary-300/12 bg-night-950/55">
             <button
               type="button"
               class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-inset"
@@ -280,7 +392,7 @@
                   </div>
                   <button
                     type="button"
-                    class="h-12 rounded-full border border-primary-300/25 px-4 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                    class="h-12 rounded-full border border-primary-300/25 px-4 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
                     (click)="aplicarPadroesMultiplo()"
                   >
                     Aplicar
@@ -292,18 +404,25 @@
 
           <div class="alunos-lista-scroll mt-5 flex-1 space-y-3 overflow-y-auto pr-1">
             @for (item of alunosSelecionadosLista(); track item.aluno.id) {
-              <article class="rounded-3xl border border-primary-300/12 bg-night-950/50 p-4">
+              <article class="rounded-2xl border border-primary-300/12 bg-night-950/50 p-4">
                 <div class="grid gap-3 lg:grid-cols-[1fr_9rem_1.4fr] lg:items-start">
-                  <div>
-                    <h3 class="font-brand text-lg font-bold text-white">{{ item.aluno.nome }}</h3>
-                    <p class="mt-1 text-sm text-slate-400">{{ item.aluno.curso }} · {{ item.aluno.instituicao }}</p>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500/15 text-xs font-bold text-primary-200"
+                    >
+                      {{ obterIniciaisAluno(item.aluno.nome) }}
+                    </div>
+                    <div>
+                      <h3 class="font-brand text-base font-bold text-white">{{ item.aluno.nome }}</h3>
+                      <p class="mt-0.5 text-xs text-slate-400">{{ item.aluno.curso }}</p>
+                    </div>
                   </div>
                   <div>
                     <label class="sr-only" [for]="'valor-multiplo-' + item.aluno.id">
                       Moedas para {{ item.aluno.nome }}
                     </label>
                     <input
-                      class="w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      class="w-full rounded-xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
                       type="number"
                       min="1"
                       step="1"
@@ -319,7 +438,7 @@
                       Motivo para {{ item.aluno.nome }}
                     </label>
                     <textarea
-                      class="min-h-20 w-full resize-y rounded-2xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                      class="min-h-20 w-full resize-y rounded-xl border border-primary-300/15 bg-surface-950 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
                       placeholder="Motivo"
                       [id]="'motivo-multiplo-' + item.aluno.id"
                       [value]="item.motivo"
@@ -339,14 +458,14 @@
             <div class="flex flex-col-reverse gap-3 sm:flex-row">
               <button
                 type="button"
-                class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+                class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
                 (click)="cancelarEnvioMultiplo()"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
                 [disabled]="!envioMultiploValido()"
                 (click)="abrirConfirmacaoMultipla()"
               >
@@ -364,7 +483,7 @@
         role="presentation"
       >
         <section
-          class="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          class="modal-enter flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirmar-envio-multiplo-title"
@@ -381,13 +500,20 @@
 
           <div class="alunos-lista-scroll mt-5 flex-1 space-y-3 overflow-y-auto pr-1">
             @for (item of alunosSelecionadosLista(); track item.aluno.id) {
-              <article class="rounded-3xl border border-primary-300/12 bg-night-950/55 p-4 text-sm">
+              <article class="rounded-2xl border border-primary-300/12 bg-night-950/55 p-4 text-sm">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 class="font-brand text-lg font-bold text-white">{{ item.aluno.nome }}</h3>
-                    <p class="mt-1 text-slate-400">{{ item.motivo }}</p>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500/15 text-xs font-bold text-primary-200"
+                    >
+                      {{ obterIniciaisAluno(item.aluno.nome) }}
+                    </div>
+                    <div>
+                      <h3 class="font-brand text-base font-bold text-white">{{ item.aluno.nome }}</h3>
+                      <p class="mt-1 text-slate-400">{{ item.motivo }}</p>
+                    </div>
                   </div>
-                  <span class="rounded-full bg-primary-500/15 px-3 py-1 font-semibold text-primary-100">
+                  <span class="rounded-lg bg-primary-500/15 px-3 py-1 font-semibold text-primary-100">
                     {{ item.valor }} moedas
                   </span>
                 </div>
@@ -395,7 +521,7 @@
             }
           </div>
 
-          <dl class="mt-5 grid gap-3 rounded-3xl border border-primary-300/12 bg-night-950/55 p-5 text-sm sm:grid-cols-3">
+          <dl class="mt-5 grid gap-3 rounded-2xl border border-primary-300/12 bg-night-950/55 p-5 text-sm sm:grid-cols-3">
             <div>
               <dt class="text-slate-400">Alunos</dt>
               <dd class="mt-1 font-bold text-white">{{ totalSelecionados() }}</dd>
@@ -413,7 +539,7 @@
           <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
-              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:text-slate-500"
+              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:text-slate-500"
               [disabled]="enviandoMoedas()"
               (click)="voltarParaPreenchimentoMultiplo()"
             >
@@ -421,68 +547,11 @@
             </button>
             <button
               type="button"
-              class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
               [disabled]="enviandoMoedas() || !envioMultiploValido()"
               (click)="confirmarEnvioMultiplo()"
             >
-              {{ enviandoMoedas() ? 'Enviando...' : 'Confirmar envio' }}
-            </button>
-          </div>
-        </section>
-      </div>
-    }
-
-    @if (motivoPendente(); as motivo) {
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center bg-night-950/80 px-5 py-8 backdrop-blur-sm"
-        role="presentation"
-      >
-        <section
-          class="w-full max-w-lg rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="motivo-envio-title"
-        >
-          <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
-            Passo 1 de 2
-          </p>
-          <h2 id="motivo-envio-title" class="font-brand mt-3 text-2xl font-bold text-white">
-            Informe o motivo do envio
-          </h2>
-          <p class="mt-3 text-sm leading-6 text-slate-300">
-            Descreva por que
-            <strong class="text-primary-100">{{ motivo.aluno.nome }}</strong>
-            receberá
-            <strong class="text-primary-100">{{ motivo.valor }} moedas</strong>.
-          </p>
-
-          <div class="mt-5">
-            <label class="sr-only" for="motivo-envio-moedas">Motivo do envio</label>
-            <textarea
-              id="motivo-envio-moedas"
-              class="min-h-36 w-full resize-y rounded-3xl border border-primary-300/15 bg-surface-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
-              placeholder="Ex.: Participação excelente na aula, entrega antecipada do trabalho ou apoio aos colegas."
-              [value]="motivo.motivo"
-              (input)="atualizarMotivoPendente($event)"
-            ></textarea>
-          </div>
-
-          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
-              (click)="cancelarMotivo()"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              class="inline-flex items-center justify-center gap-2 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-              [disabled]="!podeContinuarParaConfirmacao()"
-              (click)="continuarParaConfirmacao()"
-            >
-              Continuar
-              <span aria-hidden="true">→</span>
+              {{ enviandoMoedas() ? 'Enviando…' : 'Confirmar envio' }}
             </button>
           </div>
         </section>
@@ -495,13 +564,13 @@
         role="presentation"
       >
         <section
-          class="w-full max-w-lg rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
+          class="modal-enter w-full max-w-lg rounded-[2rem] border border-primary-300/20 bg-surface-900 p-6 shadow-2xl shadow-primary-950/40 sm:p-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirmar-envio-title"
         >
           <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
-            Passo 2 de 2
+            Confirmação
           </p>
           <h2 id="confirmar-envio-title" class="font-brand mt-3 text-2xl font-bold text-white">
             Confirmar envio de moedas
@@ -510,11 +579,10 @@
             Você está prestes a enviar
             <strong class="text-primary-100">{{ confirmacao.valor }} moedas</strong>
             para
-            <strong class="text-primary-100">{{ confirmacao.aluno.nome }}</strong
-            >.
+            <strong class="text-primary-100">{{ confirmacao.aluno.nome }}</strong>.
           </p>
           <dl
-            class="mt-5 space-y-3 rounded-3xl border border-primary-300/12 bg-night-950/55 p-5 text-sm"
+            class="mt-5 space-y-3 rounded-2xl border border-primary-300/12 bg-night-950/55 p-5 text-sm"
           >
             <div>
               <dt class="text-slate-400">Motivo</dt>
@@ -530,7 +598,7 @@
           <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
-              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:text-slate-500"
+              class="rounded-full border border-primary-300/25 px-5 py-2.5 text-sm font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:text-slate-500"
               [disabled]="enviandoMoedas()"
               (click)="cancelarConfirmacao()"
             >
@@ -538,11 +606,11 @@
             </button>
             <button
               type="button"
-              class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
               [disabled]="enviandoMoedas()"
               (click)="confirmarEnvioMoedas()"
             >
-              {{ enviandoMoedas() ? 'Enviando...' : 'Confirmar envio' }}
+              {{ enviandoMoedas() ? 'Enviando…' : 'Confirmar envio' }}
             </button>
           </div>
         </section>
