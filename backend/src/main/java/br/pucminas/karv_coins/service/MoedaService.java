@@ -1,9 +1,11 @@
 package br.pucminas.karv_coins.service;
 
+import br.pucminas.karv_coins.dto.notification.TransacaoNotificacaoDto;
 import br.pucminas.karv_coins.dto.request.EnvioMoedasItemRequestDto;
 import br.pucminas.karv_coins.dto.request.EnviarMoedasRequestDto;
 import br.pucminas.karv_coins.dto.response.EnvioMoedasItemResponseDto;
 import br.pucminas.karv_coins.dto.response.EnviarMoedasResponseDto;
+import br.pucminas.karv_coins.event.MoedasEnviadasEvent;
 import br.pucminas.karv_coins.model.Aluno;
 import br.pucminas.karv_coins.model.Professor;
 import br.pucminas.karv_coins.model.Transacao;
@@ -18,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +30,18 @@ public class MoedaService {
     private final ProfessorRepository professorRepository;
     private final AlunoRepository alunoRepository;
     private final TransacaoRepository transacaoRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MoedaService(
             ProfessorRepository professorRepository,
             AlunoRepository alunoRepository,
-            TransacaoRepository transacaoRepository
+            TransacaoRepository transacaoRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.professorRepository = professorRepository;
         this.alunoRepository = alunoRepository;
         this.transacaoRepository = transacaoRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -75,6 +81,8 @@ public class MoedaService {
         }
 
         List<Transacao> transacoesSalvas = transacaoRepository.saveAll(transacoes);
+        publicarEventoNotificacao(transacoesSalvas, professor.getSaldo());
+
         List<EnvioMoedasItemResponseDto> envios = transacoesSalvas.stream()
                 .map(EnvioMoedasItemResponseDto::from)
                 .toList();
@@ -91,6 +99,24 @@ public class MoedaService {
                 );
             }
         }
+    }
+
+    private void publicarEventoNotificacao(List<Transacao> transacoes, Double saldoProfessor) {
+        List<TransacaoNotificacaoDto> notificacoes = transacoes.stream()
+                .map(transacao -> new TransacaoNotificacaoDto(
+                        transacao.getAluno().getEmail(),
+                        transacao.getAluno().getNome(),
+                        transacao.getAluno().getSaldo(),
+                        transacao.getProfessor().getEmail(),
+                        transacao.getProfessor().getNome(),
+                        saldoProfessor,
+                        transacao.getValor(),
+                        transacao.getMotivo(),
+                        transacao.getData()
+                ))
+                .toList();
+
+        eventPublisher.publishEvent(new MoedasEnviadasEvent(notificacoes));
     }
 
     private Map<Long, Aluno> buscarAlunosParaAtualizacao(List<Long> alunoIds) {

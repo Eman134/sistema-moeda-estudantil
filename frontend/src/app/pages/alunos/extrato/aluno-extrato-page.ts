@@ -1,40 +1,42 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-interface LancamentoAluno {
-  id: number;
-  descricao: string;
-  origem: string;
-  quantidadeMoedas: number;
-  data: string;
-}
+import { ExtratoItem } from '../../../models/extrato.models';
+import { AlunosService } from '../../../services/alunos.service';
+import { ExtratoService } from '../../../services/extrato.service';
 
 @Component({
   selector: 'app-aluno-extrato-page',
+  imports: [DatePipe],
   templateUrl: './aluno-extrato-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AlunoExtratoPage {
-  protected readonly lancamentosAluno: LancamentoAluno[] = [
-    {
-      id: 1,
-      descricao: 'Participação em seminário',
-      origem: 'Prof. Carlos Mendes',
-      quantidadeMoedas: 80,
-      data: '12/05/2026',
-    },
-    {
-      id: 2,
-      descricao: 'Entrega antecipada de projeto',
-      origem: 'Prof. Helena Duarte',
-      quantidadeMoedas: 120,
-      data: '08/05/2026',
-    },
-    {
-      id: 3,
-      descricao: 'Resgate de benefício',
-      origem: 'Café Campus',
-      quantidadeMoedas: -120,
-      data: '02/05/2026',
-    },
-  ];
+  private readonly extratoService = inject(ExtratoService);
+  private readonly alunosService = inject(AlunosService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly lancamentos = signal<ExtratoItem[]>([]);
+  protected readonly saldo = signal<number | null>(null);
+  protected readonly carregando = signal(true);
+  protected readonly erro = signal<string | null>(null);
+
+  constructor() {
+    this.extratoService
+      .consultarExtratoAluno()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (extrato) => {
+          this.lancamentos.set(extrato.lancamentos.content);
+          this.saldo.set(extrato.saldo);
+          this.alunosService.atualizarSaldoAluno(extrato.saldo);
+          this.carregando.set(false);
+        },
+        error: () => {
+          this.erro.set('Não foi possível carregar o extrato. Tente novamente mais tarde.');
+          this.carregando.set(false);
+        },
+      });
+  }
 }

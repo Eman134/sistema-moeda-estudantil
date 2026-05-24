@@ -15,9 +15,9 @@ interface ConfirmacaoEnvioMoedas {
   motivo: string;
 }
 
-interface MotivoEnvioMoedas {
+interface EnvioIndividual {
   aluno: AlunoResumo;
-  valor: number;
+  valor: number | null;
   motivo: string;
 }
 
@@ -52,9 +52,8 @@ export class ProfessorHomePage {
   protected readonly tamanhoPagina = signal(5);
   protected readonly carregandoAlunos = signal(false);
   protected readonly enviandoMoedas = signal(false);
-  protected readonly motivoPendente = signal<MotivoEnvioMoedas | null>(null);
+  protected readonly envioIndividualAberto = signal<EnvioIndividual | null>(null);
   protected readonly confirmacaoPendente = signal<ConfirmacaoEnvioMoedas | null>(null);
-  protected readonly moedasPorAluno = signal<Record<number, number | null>>({});
   protected readonly etapaEnvioMultiplo = signal<EtapaEnvioMultiplo>('inativo');
   protected readonly alunosSelecionados = signal<Record<number, EnvioMultiploAluno>>({});
   protected readonly valorPadraoMultiplo = signal<number | null>(null);
@@ -85,6 +84,14 @@ export class ProfessorHomePage {
         selecionados.every((item) => item.valor !== null && item.valor > 0 && item.motivo.trim()),
     );
   });
+  protected readonly envioIndividualValido = computed(() => {
+    const envio = this.envioIndividualAberto();
+    if (!envio) return false;
+    const saldo = this.saldoProfessor();
+    return Boolean(
+      envio.valor !== null && envio.valor > 0 && envio.motivo.trim() && saldo !== null && envio.valor <= saldo,
+    );
+  });
 
   constructor() {
     this.carregarResumoProfessor();
@@ -98,41 +105,36 @@ export class ProfessorHomePage {
       });
   }
 
-  protected atualizarQuantidadeMoedas(alunoId: number, evento: Event): void {
+  protected abrirEnvioIndividual(aluno: AlunoResumo): void {
+    if (this.etapaEnvioMultiplo() === 'selecao') return;
+    this.envioIndividualAberto.set({ aluno, valor: null, motivo: '' });
+  }
+
+  protected fecharEnvioIndividual(): void {
+    this.envioIndividualAberto.set(null);
+  }
+
+  protected atualizarValorIndividual(evento: Event): void {
     const campo = evento.target as HTMLInputElement;
-    const quantidade = Number(campo.value);
-
-    this.moedasPorAluno.update((valoresAtuais) => ({
-      ...valoresAtuais,
-      [alunoId]: campo.value ? quantidade : null,
-    }));
+    const valor = campo.value ? Number(campo.value) : null;
+    this.envioIndividualAberto.update((envio) => (envio ? { ...envio, valor } : envio));
   }
 
-  protected obterQuantidadeMoedas(alunoId: number): number | null {
-    return this.moedasPorAluno()[alunoId] ?? null;
+  protected atualizarMotivoIndividual(evento: Event): void {
+    const campo = evento.target as HTMLTextAreaElement;
+    this.envioIndividualAberto.update((envio) => (envio ? { ...envio, motivo: campo.value } : envio));
   }
 
-  protected podeDistribuirMoedas(alunoId: number): boolean {
-    const quantidade = this.obterQuantidadeMoedas(alunoId);
-    const saldo = this.saldoProfessor();
-
-    return Boolean(quantidade && quantidade > 0 && saldo !== null && quantidade <= saldo);
-  }
-
-  protected prepararEnvioMoedas(aluno: AlunoResumo): void {
-    const valor = this.obterQuantidadeMoedas(aluno.id);
-
-    if (!valor || valor <= 0) {
-      this.toastService.aviso('Revise os dados', 'Informe uma quantidade válida de moedas.');
-      return;
-    }
-
-    this.motivoPendente.set({ aluno, valor, motivo: '' });
+  protected confirmarEnvioIndividual(): void {
+    const envio = this.envioIndividualAberto();
+    if (!envio || !envio.valor || !envio.motivo.trim()) return;
+    this.envioIndividualAberto.set(null);
+    this.confirmacaoPendente.set({ aluno: envio.aluno, valor: envio.valor, motivo: envio.motivo.trim() });
   }
 
   protected iniciarEnvioMultiplo(): void {
     this.etapaEnvioMultiplo.set('selecao');
-    this.motivoPendente.set(null);
+    this.envioIndividualAberto.set(null);
     this.confirmacaoPendente.set(null);
   }
 
@@ -285,30 +287,13 @@ export class ProfessorHomePage {
       });
   }
 
-  protected atualizarMotivoPendente(evento: Event): void {
-    const campo = evento.target as HTMLTextAreaElement;
-
-    this.motivoPendente.update((motivoAtual) =>
-      motivoAtual ? { ...motivoAtual, motivo: campo.value } : motivoAtual,
-    );
-  }
-
-  protected podeContinuarParaConfirmacao(): boolean {
-    return Boolean(this.motivoPendente()?.motivo.trim());
-  }
-
-  protected continuarParaConfirmacao(): void {
-    const motivo = this.motivoPendente();
-    if (!motivo || !motivo.motivo.trim()) {
-      return;
-    }
-
-    this.motivoPendente.set(null);
-    this.confirmacaoPendente.set({ ...motivo, motivo: motivo.motivo.trim() });
-  }
-
-  protected cancelarMotivo(): void {
-    this.motivoPendente.set(null);
+  protected obterIniciaisAluno(nome: string): string {
+    return nome
+      .split(' ')
+      .filter((p) => p.length > 0)
+      .slice(0, 2)
+      .map((p) => p[0].toUpperCase())
+      .join('');
   }
 
   protected confirmarEnvioMoedas(): void {
@@ -332,10 +317,6 @@ export class ProfessorHomePage {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.moedasPorAluno.update((valoresAtuais) => ({
-            ...valoresAtuais,
-            [confirmacao.aluno.id]: null,
-          }));
           this.confirmacaoPendente.set(null);
           this.enviandoMoedas.set(false);
           this.toastService.sucesso(
