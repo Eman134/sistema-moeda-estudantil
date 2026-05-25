@@ -1,5 +1,6 @@
 package br.pucminas.karv_coins.dto.notification;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 public record TransacaoNotificacaoDto(
@@ -12,5 +13,4 @@ public record TransacaoNotificacaoDto(
         Double valor,
         String motivo,
         LocalDateTime data
-) {
-}
+) implements Serializable {}

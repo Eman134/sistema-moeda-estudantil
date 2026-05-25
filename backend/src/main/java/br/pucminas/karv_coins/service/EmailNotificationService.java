@@ -25,10 +25,22 @@ public class EmailNotificationService {
     }
 
     public void notificarEnvioMoedas(List<TransacaoNotificacaoDto> transacoes) {
-        for (TransacaoNotificacaoDto transacao : transacoes) {
-            notificarRecebimentoAluno(transacao);
-            notificarEnvioProfessor(transacao);
+        if (transacoes == null || transacoes.isEmpty()) {
+            log.warn("Solicitada notificacao de envio de moedas sem transacoes.");
+            return;
         }
+        for (TransacaoNotificacaoDto transacao : transacoes) {
+            notificarEnvioMoedas(transacao);
+        }
+    }
+
+    public void notificarEnvioMoedas(TransacaoNotificacaoDto transacao) {
+        if (transacao == null) {
+            log.warn("Solicitada notificacao de envio de moedas com transacao nula.");
+            return;
+        }
+        notificarRecebimentoAluno(transacao);
+        notificarEnvioProfessor(transacao);
     }
 
     public void notificarRecebimentoAluno(TransacaoNotificacaoDto transacao) {
