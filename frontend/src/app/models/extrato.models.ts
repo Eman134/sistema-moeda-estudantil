@@ -2,8 +2,10 @@ import { PaginaResponse } from './paginacao.models';
 
 export interface ExtratoItem {
   id: number;
+  tipo: 'CREDITO' | 'DEBITO' | 'RESGATE';
   descricao: string;
   contraparte: string;
+  codigoCupom?: string | null;
   quantidadeMoedas: number;
   data: string;
 }

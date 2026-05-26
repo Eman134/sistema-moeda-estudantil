@@ -8,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { ModoAutenticacao } from '../../models/auth.models';
 import { AuthService } from '../../services/auth.service';
@@ -35,6 +35,7 @@ interface RespostaViaCep {
 export class AuthPage {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
   private readonly httpClient = inject(HttpClient);
 
   protected readonly modoAtual = signal<ModoAutenticacao>('login');
@@ -226,7 +227,7 @@ export class AuthPage {
     this.authService.fazerLogin(this.formularioLogin.getRawValue()).subscribe({
       next: () => {
         this.loginCarregando.set(false);
-        void this.router.navigateByUrl('/painel', { replaceUrl: true });
+        void this.router.navigateByUrl(this.obterReturnUrlSeguro(), { replaceUrl: true });
       },
       error: (erro: HttpErrorResponse) => {
         this.loginCarregando.set(false);
@@ -311,6 +312,15 @@ export class AuthPage {
     }
     const confirmar = formulario.get('confirmarSenha');
     return Boolean(confirmar?.touched) || this.formularioEnviado();
+  }
+
+  private obterReturnUrlSeguro(): string {
+    const returnUrl = this.activatedRoute.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl?.startsWith('/') && !returnUrl.startsWith('//')) {
+      return returnUrl;
+    }
+
+    return '/painel';
   }
 }
 

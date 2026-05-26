@@ -13,13 +13,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @Configuration
 @EnableAsync
-@EnableConfigurationProperties(br.pucminas.karv_coins.config.MailProperties.class)
+@EnableConfigurationProperties({MailProperties.class, FrontendProperties.class})
 public class MailConfig {
     private static final Logger log = LoggerFactory.getLogger(MailConfig.class);
 
     @Bean
     ApplicationRunner mailConfigurationValidator(
-            br.pucminas.karv_coins.config.MailProperties appMailProperties,
+            MailProperties appMailProperties,
             JavaMailSender mailSender
     ) {
         return args -> {

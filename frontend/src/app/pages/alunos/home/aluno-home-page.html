@@ -61,7 +61,11 @@
               [disabled]="!podeResgatar(beneficio)"
               (click)="iniciarResgate(beneficio)"
             >
-              {{ podeResgatar(beneficio) ? 'Resgatar vantagem' : 'Saldo insuficiente' }}
+              @if (estaResgatando(beneficio)) {
+                Resgatando...
+              } @else {
+                {{ podeResgatar(beneficio) ? 'Resgatar vantagem' : 'Saldo insuficiente' }}
+              }
             </button>
           </div>
         </article>

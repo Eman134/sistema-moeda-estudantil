@@ -5,13 +5,20 @@ import br.pucminas.karv_coins.dto.response.ExtratoResponseDto;
 import br.pucminas.karv_coins.dto.response.PaginaResponseDto;
 import br.pucminas.karv_coins.model.Aluno;
 import br.pucminas.karv_coins.model.Professor;
+import br.pucminas.karv_coins.model.Resgate;
 import br.pucminas.karv_coins.model.Transacao;
 import br.pucminas.karv_coins.repository.AlunoRepository;
 import br.pucminas.karv_coins.repository.ProfessorRepository;
+import br.pucminas.karv_coins.repository.ResgateRepository;
 import br.pucminas.karv_coins.repository.TransacaoRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Stream;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,15 +28,18 @@ public class ExtratoService {
     private final AlunoRepository alunoRepository;
     private final ProfessorRepository professorRepository;
     private final TransacaoRepository transacaoRepository;
+    private final ResgateRepository resgateRepository;
 
     public ExtratoService(
             AlunoRepository alunoRepository,
             ProfessorRepository professorRepository,
-            TransacaoRepository transacaoRepository
+            TransacaoRepository transacaoRepository,
+            ResgateRepository resgateRepository
     ) {
         this.alunoRepository = alunoRepository;
         this.professorRepository = professorRepository;
         this.transacaoRepository = transacaoRepository;
+        this.resgateRepository = resgateRepository;
     }
 
     @Transactional(readOnly = true)
@@ -38,12 +48,19 @@ public class ExtratoService {
         Aluno aluno = alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado."));
 
-        Page<Transacao> transacoes = transacaoRepository.findByAluno_EmailOrderByDataDesc(
-                email,
-                PageRequest.of(page, size)
-        );
+        Pageable pageable = PageRequest.of(page, size);
+        List<ExtratoItemResponseDto> lancamentos = Stream.concat(
+                        transacaoRepository.findAllByAluno_EmailOrderByDataDesc(email)
+                                .stream()
+                                .map(ExtratoItemResponseDto::creditoAluno),
+                        resgateRepository.findAllByAluno_EmailOrderByDataDesc(email)
+                                .stream()
+                                .map(ExtratoItemResponseDto::resgateAluno)
+                )
+                .sorted(Comparator.comparing(ExtratoItemResponseDto::data).reversed())
+                .toList();
 
-        Page<ExtratoItemResponseDto> itens = transacoes.map(ExtratoItemResponseDto::creditoAluno);
+        Page<ExtratoItemResponseDto> itens = paginar(lancamentos, pageable);
         return new ExtratoResponseDto(aluno.getSaldo(), PaginaResponseDto.from(itens));
     }
 
@@ -60,5 +77,11 @@ public class ExtratoService {
 
         Page<ExtratoItemResponseDto> itens = transacoes.map(ExtratoItemResponseDto::debitoProfessor);
         return new ExtratoResponseDto(professor.getSaldo(), PaginaResponseDto.from(itens));
+    }
+
+    private Page<ExtratoItemResponseDto> paginar(List<ExtratoItemResponseDto> lancamentos, Pageable pageable) {
+        int inicio = Math.min((int) pageable.getOffset(), lancamentos.size());
+        int fim = Math.min(inicio + pageable.getPageSize(), lancamentos.size());
+        return new PageImpl<>(lancamentos.subList(inicio, fim), pageable, lancamentos.size());
     }
 }

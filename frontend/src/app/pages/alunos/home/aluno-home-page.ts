@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
 import { Vantagem } from '../../../models/vantagem.models';
 import { AlunosService } from '../../../services/alunos.service';
@@ -25,6 +26,7 @@ export class AlunoHomePage {
   protected readonly totalPaginas = signal(0);
   protected readonly paginaAtual = signal(0);
   protected readonly tamanhoPagina = signal(6);
+  protected readonly resgatandoVantagemId = signal<number | null>(null);
 
   protected readonly paginaExibida = computed(() => this.paginaAtual() + 1);
   protected readonly podeVoltarPagina = computed(() => this.paginaAtual() > 0 && !this.carregandoBeneficios());
@@ -58,7 +60,7 @@ export class AlunoHomePage {
   protected podeResgatar(beneficio: Vantagem): boolean {
     const saldo = this.saldoAluno() ?? 0;
 
-    return beneficio.custoMoedas <= saldo;
+    return beneficio.custoMoedas <= saldo && this.resgatandoVantagemId() === null;
   }
 
   protected iniciarResgate(beneficio: Vantagem): void {
@@ -67,10 +69,29 @@ export class AlunoHomePage {
       return;
     }
 
-    this.toastService.informativo(
-      'Resgate em breve',
-      `O resgate de "${beneficio.descricao}" será implementado na próxima etapa.`,
-    );
+    this.resgatandoVantagemId.set(beneficio.id);
+    this.vantagensService
+      .resgatarVantagem(beneficio.id)
+      .pipe(
+        finalize(() => this.resgatandoVantagemId.set(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (resgate) => {
+          this.alunosService.atualizarSaldoAluno(resgate.saldoAtual);
+          this.toastService.sucesso(
+            'Vantagem resgatada',
+            `Cupom ${resgate.codigoCupom} gerado. Confira seu e-mail com o QRCode.`,
+          );
+        },
+        error: (erro: unknown) => {
+          this.toastService.erro('Erro ao resgatar vantagem', this.extrairMensagemErro(erro));
+        },
+      });
+  }
+
+  protected estaResgatando(beneficio: Vantagem): boolean {
+    return this.resgatandoVantagemId() === beneficio.id;
   }
 
   protected formatarMoedas(valor: number): string {

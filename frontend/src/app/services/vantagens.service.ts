@@ -4,7 +4,12 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import { PaginaResponse } from '../models/paginacao.models';
-import { SalvarVantagemRequest, Vantagem } from '../models/vantagem.models';
+import {
+  ResgateResponse,
+  ResgateVerificacao,
+  SalvarVantagemRequest,
+  Vantagem,
+} from '../models/vantagem.models';
 
 @Injectable({ providedIn: 'root' })
 export class VantagensService {
@@ -18,6 +23,16 @@ export class VantagensService {
     const params = new HttpParams().set('page', page).set('size', size);
 
     return this.httpClient.get<PaginaResponse<Vantagem>>(`${API_BASE_URL}/vantagens`, { params });
+  }
+
+  resgatarVantagem(vantagemId: number): Observable<ResgateResponse> {
+    return this.httpClient.post<ResgateResponse>(`${API_BASE_URL}/vantagens/${vantagemId}/resgates`, {});
+  }
+
+  verificarResgate(codigoCupom: string): Observable<ResgateVerificacao> {
+    return this.httpClient.get<ResgateVerificacao>(
+      `${API_BASE_URL}/resgates/${encodeURIComponent(codigoCupom)}/verificacao`,
+    );
   }
 
   criarVantagem(request: SalvarVantagemRequest): Observable<Vantagem> {

@@ -16,6 +16,10 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
 
     Optional<Aluno> findByEmail(String email);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Aluno a where a.email = :email")
+    Optional<Aluno> findByEmailForUpdate(@Param("email") String email);
+
     Optional<Aluno> findByCpf(String cpf);
 
     boolean existsByCpf(String cpf);

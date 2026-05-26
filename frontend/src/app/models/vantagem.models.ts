@@ -12,3 +12,28 @@ export interface SalvarVantagemRequest {
   fotoUrl: string;
   custoMoedas: number;
 }
+
+export interface ResgateResponse {
+  id: number;
+  vantagemId: number;
+  descricaoVantagem: string;
+  nomeEmpresa: string;
+  valorMoedas: number;
+  codigoCupom: string;
+  data: string;
+  saldoAtual: number;
+  urlVerificacao: string;
+}
+
+export interface ResgateVerificacao {
+  id: number;
+  codigoCupom: string;
+  vantagemId: number;
+  descricaoVantagem: string;
+  nomeEmpresa: string;
+  alunoId: number;
+  nomeAluno: string;
+  emailAluno: string;
+  valorMoedas: number;
+  data: string;
+}

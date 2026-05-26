@@ -1,6 +1,5 @@
 package br.pucminas.karv_coins.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Binding;
@@ -21,18 +20,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableRabbit
 public class RabbitMQConfig {
-    public static final String FILA_NOTIFICACAO = "notificacao-moedas";
-    public static final String EXCHANGE_NOTIFICACAO = "notificacao-exchange";
-    public static final String ROUTING_KEY = "notificacao-moedas-key";
+    public static final String FILA_EMAIL = "notificacao-moedas";
+    public static final String EXCHANGE_EMAIL = "notificacao-exchange";
+    public static final String ROUTING_KEY_EMAIL = "notificacao-moedas-key";
 
     @Bean
     public Queue filaNotificacao() {
-        return new Queue(FILA_NOTIFICACAO, true);
+        return new Queue(FILA_EMAIL, true);
     }
 
     @Bean
     public DirectExchange exchangeNotificacao() {
-        return new DirectExchange(EXCHANGE_NOTIFICACAO);
+        return new DirectExchange(EXCHANGE_EMAIL);
     }
 
     @Bean
@@ -40,7 +39,7 @@ public class RabbitMQConfig {
         return BindingBuilder
                 .bind(filaNotificacao)
                 .to(exchangeNotificacao)
-                .with(ROUTING_KEY);
+                .with(ROUTING_KEY_EMAIL);
     }
 
     @Bean
@@ -48,6 +47,7 @@ public class RabbitMQConfig {
         SimpleMessageConverter converter = new SimpleMessageConverter();
         converter.addAllowedListPatterns(
                 "br.pucminas.karv_coins.*",
+                "br.pucminas.karv_coins.**",
                 "java.time.*",
                 "java.util.*",
                 "java.lang.*",

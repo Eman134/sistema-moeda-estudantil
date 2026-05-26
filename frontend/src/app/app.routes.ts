@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { AutenticadoGuard } from './guards/autenticado.guard';
 import { EmpresaGuard } from './guards/empresa.guard';
+import { EmpresaVerificacaoGuard } from './guards/empresa-verificacao.guard';
 import { ExtratoGuard } from './guards/extrato.guard';
 
 export const routes: Routes = [
@@ -37,6 +38,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/empresas/beneficios/empresa-beneficios-page').then(
         (component) => component.EmpresaBeneficiosPage,
+      ),
+  },
+  {
+    path: 'resgates/verificar/:codigoCupom',
+    title: 'Verificar Resgate | KarvCoins',
+    canActivate: [EmpresaVerificacaoGuard],
+    loadComponent: () =>
+      import('./pages/resgates/verificar/resgate-verificacao-page').then(
+        (component) => component.ResgateVerificacaoPage,
       ),
   },
   {

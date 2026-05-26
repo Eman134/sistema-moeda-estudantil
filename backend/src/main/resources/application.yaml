@@ -36,6 +36,8 @@ spring:
             required: true
 
 app:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
   security:
     jwt:
       issuer: karv-coins

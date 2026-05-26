@@ -1,0 +1,80 @@
+<main class="px-5 py-10 sm:px-8 lg:py-14">
+  <section class="mx-auto w-full max-w-4xl" aria-labelledby="resgate-verificacao-title">
+    <div
+      class="rounded-[2rem] border border-primary-300/15 bg-surface-900/75 p-7 shadow-2xl shadow-primary-950/25 sm:p-10"
+    >
+      <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary-200">
+        Verificação de resgate
+      </p>
+      <h1
+        id="resgate-verificacao-title"
+        class="font-brand mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl"
+      >
+        Conferência presencial
+      </h1>
+      <p class="mt-4 max-w-3xl text-base leading-7 text-slate-300">
+        Confira os dados abaixo antes de liberar a vantagem ao aluno.
+      </p>
+    </div>
+
+    <div
+      class="mt-8 rounded-3xl border border-primary-300/15 bg-night-900/80 p-7 shadow-xl shadow-primary-950/20 sm:p-8"
+    >
+      @if (carregando()) {
+        <p class="text-sm text-slate-300">Carregando dados do resgate...</p>
+      } @else if (erro()) {
+        <div
+          class="rounded-2xl border border-red-300/25 bg-red-950/30 p-5 text-sm text-red-100"
+          role="alert"
+        >
+          <h2 class="font-brand text-2xl font-bold text-white">Resgate não validado</h2>
+          <p class="mt-3 leading-6">{{ erro() }}</p>
+        </div>
+      } @else if (resgate(); as dados) {
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-sm font-medium text-primary-100">Cupom</p>
+            <p class="font-brand mt-2 text-3xl font-bold tracking-wide text-white">
+              {{ dados.codigoCupom }}
+            </p>
+          </div>
+          <span
+            class="rounded-full bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-100"
+          >
+            Resgate encontrado
+          </span>
+        </div>
+
+        <dl class="mt-8 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl bg-surface-950/80 p-5">
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Vantagem
+            </dt>
+            <dd class="mt-2 text-lg font-semibold text-white">{{ dados.descricaoVantagem }}</dd>
+          </div>
+          <div class="rounded-2xl bg-surface-950/80 p-5">
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Empresa</dt>
+            <dd class="mt-2 text-lg font-semibold text-white">{{ dados.nomeEmpresa }}</dd>
+          </div>
+          <div class="rounded-2xl bg-surface-950/80 p-5">
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Aluno</dt>
+            <dd class="mt-2 text-lg font-semibold text-white">{{ dados.nomeAluno }}</dd>
+            <dd class="mt-1 text-sm text-slate-300">{{ dados.emailAluno }}</dd>
+          </div>
+          <div class="rounded-2xl bg-surface-950/80 p-5">
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Valor</dt>
+            <dd class="mt-2 text-lg font-semibold text-white">
+              {{ formatarMoedas(dados.valorMoedas) }}
+            </dd>
+          </div>
+          <div class="rounded-2xl bg-surface-950/80 p-5 sm:col-span-2">
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Data do resgate
+            </dt>
+            <dd class="mt-2 text-lg font-semibold text-white">{{ formatarData(dados.data) }}</dd>
+          </div>
+        </dl>
+      }
+    </div>
+  </section>
+</main>
