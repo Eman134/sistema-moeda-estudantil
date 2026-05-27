@@ -49,13 +49,20 @@ public class ExtratoService {
                 .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado."));
 
         Pageable pageable = PageRequest.of(page, size);
+        List<Resgate> resgatesComprados = resgateRepository.findAllByAluno_EmailOrderByDataDesc(email);
+        List<Resgate> resgatesUtilizados = resgateRepository.findAllByUtilizadoPor_EmailOrderByDataDesc(email)
+                .stream()
+                .filter(resgate -> !resgate.getAluno().getEmail().equals(email))
+                .toList();
+
         List<ExtratoItemResponseDto> lancamentos = Stream.concat(
                         transacaoRepository.findAllByAluno_EmailOrderByDataDesc(email)
                                 .stream()
                                 .map(ExtratoItemResponseDto::creditoAluno),
-                        resgateRepository.findAllByAluno_EmailOrderByDataDesc(email)
-                                .stream()
-                                .map(ExtratoItemResponseDto::resgateAluno)
+                        Stream.concat(
+                                resgatesComprados.stream().map(ExtratoItemResponseDto::resgateAluno),
+                                resgatesUtilizados.stream().map(ExtratoItemResponseDto::usoResgateAluno)
+                        )
                 )
                 .sorted(Comparator.comparing(ExtratoItemResponseDto::data).reversed())
                 .toList();

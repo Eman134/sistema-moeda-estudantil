@@ -6,6 +6,7 @@ export interface ExtratoItem {
   descricao: string;
   contraparte: string;
   codigoCupom?: string | null;
+  detalhe?: string | null;
   quantidadeMoedas: number;
   data: string;
 }

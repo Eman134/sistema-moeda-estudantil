@@ -3,6 +3,7 @@ package br.pucminas.karv_coins.service;
 import br.pucminas.karv_coins.dto.request.AtualizarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.request.CriarAlunoRequestDto;
 import br.pucminas.karv_coins.dto.response.AlunoResponseDto;
+import br.pucminas.karv_coins.dto.response.AlunoSelecaoResponseDto;
 import br.pucminas.karv_coins.dto.response.AlunoResumoResponseDto;
 import br.pucminas.karv_coins.dto.response.PaginaResponseDto;
 import br.pucminas.karv_coins.model.Aluno;
@@ -86,6 +87,29 @@ public class AlunoService {
         return PaginaResponseDto.from(alunoRepository
                 .buscarComFiltro("%" + filtro.toLowerCase() + "%", pageRequest)
                 .map(AlunoResumoResponseDto::from));
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('EMPRESA')")
+    public PaginaResponseDto<AlunoSelecaoResponseDto> listarParaSelecao(String search, int page, int size) {
+        int paginaNormalizada = Math.max(page, 0);
+        int tamanhoNormalizado = Math.min(Math.max(size, 1), 50);
+        String filtro = search == null || search.isBlank() ? null : search.trim();
+        PageRequest pageRequest = PageRequest.of(
+                paginaNormalizada,
+                tamanhoNormalizado,
+                Sort.by(Sort.Direction.ASC, "nome")
+        );
+
+        if (filtro == null) {
+            return PaginaResponseDto.from(alunoRepository
+                    .findAll(pageRequest)
+                    .map(AlunoSelecaoResponseDto::from));
+        }
+
+        return PaginaResponseDto.from(alunoRepository
+                .buscarComFiltro("%" + filtro.toLowerCase() + "%", pageRequest)
+                .map(AlunoSelecaoResponseDto::from));
     }
 
     @Transactional(readOnly = true)

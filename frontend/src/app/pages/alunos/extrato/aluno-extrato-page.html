@@ -47,11 +47,15 @@
                     </p>
                   }
                 </div>
+                @if (lancamento.detalhe) {
+                  <p class="mt-2 text-xs font-medium text-primary-100">{{ lancamento.detalhe }}</p>
+                }
               </div>
               <strong
                 class="text-lg"
                 [class.text-primary-100]="lancamento.quantidadeMoedas > 0"
                 [class.text-red-300]="lancamento.quantidadeMoedas < 0"
+                [class.text-slate-300]="lancamento.quantidadeMoedas === 0"
               >
                 {{ lancamento.quantidadeMoedas > 0 ? '+' : ''
                 }}{{ lancamento.quantidadeMoedas }} moedas

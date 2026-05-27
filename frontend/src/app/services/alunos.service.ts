@@ -3,7 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
-import { AlunoResumo } from '../models/aluno.models';
+import { AlunoResumo, AlunoSelecao } from '../models/aluno.models';
 import { PaginaResponse } from '../models/paginacao.models';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +29,16 @@ export class AlunosService {
     }
 
     return this.httpClient.get<PaginaResponse<AlunoResumo>>(`${API_BASE_URL}/alunos`, { params });
+  }
+
+  listarAlunosParaSelecao(page: number, size: number, search: string): Observable<PaginaResponse<AlunoSelecao>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+
+    if (search.trim()) {
+      params = params.set('search', search.trim());
+    }
+
+    return this.httpClient.get<PaginaResponse<AlunoSelecao>>(`${API_BASE_URL}/alunos/selecao`, { params });
   }
 
   atualizarSaldoAluno(saldo: number): void {

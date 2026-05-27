@@ -39,9 +39,13 @@
             </p>
           </div>
           <span
-            class="rounded-full bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-100"
+            class="rounded-full px-4 py-2 text-sm font-semibold"
+            [class.bg-emerald-900]="!resgateUtilizado()"
+            [class.text-emerald-100]="!resgateUtilizado()"
+            [class.bg-amber-900]="resgateUtilizado()"
+            [class.text-amber-100]="resgateUtilizado()"
           >
-            Resgate encontrado
+            {{ resgateUtilizado() ? 'QRCode já utilizado' : 'Resgate encontrado' }}
           </span>
         </div>
 
@@ -57,7 +61,7 @@
             <dd class="mt-2 text-lg font-semibold text-white">{{ dados.nomeEmpresa }}</dd>
           </div>
           <div class="rounded-2xl bg-surface-950/80 p-5">
-            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Aluno</dt>
+            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Comprado por</dt>
             <dd class="mt-2 text-lg font-semibold text-white">{{ dados.nomeAluno }}</dd>
             <dd class="mt-1 text-sm text-slate-300">{{ dados.emailAluno }}</dd>
           </div>
@@ -73,7 +77,130 @@
             </dt>
             <dd class="mt-2 text-lg font-semibold text-white">{{ formatarData(dados.data) }}</dd>
           </div>
+          @if (dados.utilizado && dados.nomeUtilizadoPor) {
+            <div class="rounded-2xl border border-amber-300/20 bg-amber-500/10 p-5 sm:col-span-2">
+              <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
+                Utilizado por
+              </dt>
+              <dd class="mt-2 text-lg font-semibold text-white">{{ dados.nomeUtilizadoPor }}</dd>
+              @if (dados.emailUtilizadoPor) {
+                <dd class="mt-1 text-sm text-amber-50/80">{{ dados.emailUtilizadoPor }}</dd>
+              }
+            </div>
+          }
         </dl>
+
+        @if (!resgateUtilizado()) {
+          <section class="mt-8 border-t border-primary-300/10 pt-8" aria-labelledby="selecionar-aluno-title">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 id="selecionar-aluno-title" class="font-brand text-2xl font-bold text-white">
+                  Quem está utilizando?
+                </h2>
+                <p class="mt-2 text-sm leading-6 text-slate-300">
+                  Selecione o aluno que está presencialmente utilizando esta vantagem antes de aprovar.
+                </p>
+              </div>
+              <div class="sm:min-w-72">
+                <label class="sr-only" for="pesquisa-aluno-utilizador">Pesquisar aluno</label>
+                <input
+                  id="pesquisa-aluno-utilizador"
+                  class="h-12 w-full rounded-2xl border border-primary-300/15 bg-surface-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-primary-300 focus:ring-2 focus:ring-primary-400/30"
+                  type="search"
+                  placeholder="Pesquisar aluno..."
+                  autocomplete="off"
+                  [formControl]="pesquisaControl"
+                />
+              </div>
+            </div>
+
+            <div class="mt-5 space-y-3" aria-live="polite">
+              @if (carregandoAlunos()) {
+                <div class="rounded-2xl border border-primary-300/10 bg-surface-950/70 p-5 text-sm text-slate-300">
+                  Carregando alunos...
+                </div>
+              } @else if (alunos().length === 0) {
+                <div class="rounded-2xl border border-primary-300/10 bg-surface-950/70 p-5 text-sm text-slate-400">
+                  Nenhum aluno encontrado para a busca atual.
+                </div>
+              }
+
+              @for (aluno of alunos(); track aluno.id) {
+                <button
+                  type="button"
+                  class="group flex w-full items-center gap-4 rounded-2xl border border-primary-300/10 bg-surface-950/70 p-4 text-left transition hover:border-primary-300/30 hover:bg-primary-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+                  [class.border-primary-300]="alunoEstaSelecionado(aluno.id)"
+                  [class.bg-primary-900]="alunoEstaSelecionado(aluno.id)"
+                  [attr.aria-pressed]="alunoEstaSelecionado(aluno.id)"
+                  (click)="selecionarAluno(aluno)"
+                >
+                  <span
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-500/15 text-sm font-bold text-primary-200"
+                    aria-hidden="true"
+                  >
+                    {{ obterIniciaisAluno(aluno.nome) }}
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-semibold text-white">{{ aluno.nome }}</span>
+                    <span class="mt-0.5 block truncate text-xs text-slate-400">
+                      {{ aluno.email }} · {{ aluno.curso }} · {{ aluno.instituicao }}
+                    </span>
+                  </span>
+                  <span
+                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary-300/40 text-xs text-primary-100"
+                    [class.bg-primary-500]="alunoEstaSelecionado(aluno.id)"
+                    aria-hidden="true"
+                  >
+                    @if (alunoEstaSelecionado(aluno.id)) { ✓ }
+                  </span>
+                </button>
+              }
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3 border-t border-primary-300/10 pt-4 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+              <span>{{ totalAlunos() }} alunos encontrados</span>
+              <div class="inline-flex items-center gap-2">
+                <button
+                  type="button"
+                  class="rounded-xl border border-primary-300/15 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-600"
+                  [disabled]="!podeVoltarPagina()"
+                  (click)="paginaAnterior()"
+                >
+                  ←
+                </button>
+                <span class="rounded-xl bg-night-950/60 px-4 py-2 text-primary-100">
+                  {{ totalPaginas() === 0 ? 0 : paginaExibida() }} / {{ totalPaginas() }}
+                </span>
+                <button
+                  type="button"
+                  class="rounded-xl border border-primary-300/15 px-4 py-2 font-semibold text-primary-100 transition hover:bg-primary-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-600"
+                  [disabled]="!podeAvancarPagina()"
+                  (click)="proximaPagina()"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-col gap-3 rounded-2xl border border-primary-300/12 bg-surface-950/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-sm text-slate-300">
+                @if (alunoSelecionado(); as aluno) {
+                  Aluno selecionado: <strong class="text-primary-100">{{ aluno.nome }}</strong>
+                } @else {
+                  Selecione um aluno para liberar a aprovação.
+                }
+              </p>
+              <button
+                type="button"
+                class="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                [disabled]="!alunoSelecionado() || aprovando()"
+                (click)="aprovarUtilizacao()"
+              >
+                {{ aprovando() ? 'Aprovando...' : 'Aprovar uso' }}
+              </button>
+            </div>
+          </section>
+        }
       }
     </div>
   </section>

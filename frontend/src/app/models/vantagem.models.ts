@@ -36,4 +36,12 @@ export interface ResgateVerificacao {
   emailAluno: string;
   valorMoedas: number;
   data: string;
+  utilizado: boolean;
+  utilizadoPorId?: number | null;
+  nomeUtilizadoPor?: string | null;
+  emailUtilizadoPor?: string | null;
+}
+
+export interface AprovarUtilizacaoResgateRequest {
+  alunoId: number;
 }

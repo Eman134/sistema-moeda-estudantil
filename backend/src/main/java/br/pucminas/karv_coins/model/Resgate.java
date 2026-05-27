@@ -24,6 +24,10 @@ public class Resgate {
     @JoinColumn(name = "aluno_id", nullable = false)
     private Aluno aluno;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "utilizado_por_id")
+    private Aluno utilizadoPor;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vantagem_id", nullable = false)
     private Vantagem vantagem;

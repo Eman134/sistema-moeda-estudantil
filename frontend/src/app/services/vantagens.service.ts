@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { PaginaResponse } from '../models/paginacao.models';
 import {
+  AprovarUtilizacaoResgateRequest,
   ResgateResponse,
   ResgateVerificacao,
   SalvarVantagemRequest,
@@ -32,6 +33,16 @@ export class VantagensService {
   verificarResgate(codigoCupom: string): Observable<ResgateVerificacao> {
     return this.httpClient.get<ResgateVerificacao>(
       `${API_BASE_URL}/resgates/${encodeURIComponent(codigoCupom)}/verificacao`,
+    );
+  }
+
+  aprovarUtilizacaoResgate(
+    codigoCupom: string,
+    request: AprovarUtilizacaoResgateRequest,
+  ): Observable<ResgateVerificacao> {
+    return this.httpClient.patch<ResgateVerificacao>(
+      `${API_BASE_URL}/resgates/${encodeURIComponent(codigoCupom)}/utilizacao`,
+      request,
     );
   }
 

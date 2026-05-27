@@ -75,6 +75,16 @@ public class AlunoController {
         return ResponseEntity.ok(alunoService.listarPaginado(search, page, size));
     }
 
+    @GetMapping("/selecao")
+    @Operation(summary = "Listar alunos para seleção por empresa")
+    public ResponseEntity<Object> listarParaSelecao(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(alunoService.listarParaSelecao(search, page, size));
+    }
+
 
     @GetMapping("/me/resumo")
     @Operation(summary = "Buscar resumo do aluno autenticado")

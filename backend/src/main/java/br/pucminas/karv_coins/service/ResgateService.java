@@ -81,12 +81,35 @@ public class ResgateService {
         Resgate resgate = resgateRepository.findByCodigoCupom(codigoCupom)
                 .orElseThrow(() -> new EntityNotFoundException("Resgate não encontrado."));
 
+        validarEmpresaDoResgate(emailEmpresa, resgate);
+
+        return ResgateVerificacaoResponseDto.from(resgate);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('EMPRESA')")
+    public ResgateVerificacaoResponseDto aprovarUtilizacao(String emailEmpresa, String codigoCupom, Long alunoId) {
+        Resgate resgate = resgateRepository.findByCodigoCupomForUpdate(codigoCupom)
+                .orElseThrow(() -> new EntityNotFoundException("Resgate não encontrado."));
+
+        validarEmpresaDoResgate(emailEmpresa, resgate);
+
+        if (resgate.getUtilizadoPor() != null) {
+            throw new IllegalStateException("Este QRCode já foi utilizado.");
+        }
+
+        Aluno aluno = alunoRepository.findById(alunoId)
+                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado."));
+
+        resgate.setUtilizadoPor(aluno);
+        return ResgateVerificacaoResponseDto.from(resgateRepository.save(resgate));
+    }
+
+    private void validarEmpresaDoResgate(String emailEmpresa, Resgate resgate) {
         Empresa empresa = resgate.getVantagem().getEmpresa();
         if (!empresa.getEmail().equals(emailEmpresa)) {
             throw new EntityNotFoundException("Resgate não encontrado para a empresa autenticada.");
         }
-
-        return ResgateVerificacaoResponseDto.from(resgate);
     }
 
     private void publicarEventoNotificacao(Resgate resgate, String urlVerificacao) {

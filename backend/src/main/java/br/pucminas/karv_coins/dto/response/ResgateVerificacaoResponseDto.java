@@ -13,7 +13,11 @@ public record ResgateVerificacaoResponseDto(
         String nomeAluno,
         String emailAluno,
         Double valorMoedas,
-        LocalDateTime data
+        LocalDateTime data,
+        Boolean utilizado,
+        Long utilizadoPorId,
+        String nomeUtilizadoPor,
+        String emailUtilizadoPor
 ) {
     public static ResgateVerificacaoResponseDto from(Resgate resgate) {
         return new ResgateVerificacaoResponseDto(
@@ -26,7 +30,11 @@ public record ResgateVerificacaoResponseDto(
                 resgate.getAluno().getNome(),
                 resgate.getAluno().getEmail(),
                 resgate.getValorMoedas(),
-                resgate.getData()
+                resgate.getData(),
+                resgate.getUtilizadoPor() != null,
+                resgate.getUtilizadoPor() == null ? null : resgate.getUtilizadoPor().getId(),
+                resgate.getUtilizadoPor() == null ? null : resgate.getUtilizadoPor().getNome(),
+                resgate.getUtilizadoPor() == null ? null : resgate.getUtilizadoPor().getEmail()
         );
     }
 }
