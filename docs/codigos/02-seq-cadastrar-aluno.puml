@@ -1,0 +1,74 @@
+@startuml 02-seq-cadastrar-aluno
+' KarvCoins — Sequência UC-CAD-ALUNO: Cadastrar-se (Aluno)
+' Visão caixa-branca: Aluno ↔ SPA ↔ AlunoController ↔ AlunoService ↔ AlunoRepository ↔ DB
+
+title Sequência de Realização — UC-CAD-ALUNO: Cadastrar-se (Aluno)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Aluno" as AL
+participant ":SPA Angular" as SPA
+participant ":AlunoController" as AlunoCtrl
+participant ":AlunoService" as AlunoSvc
+participant ":AlunoRepository" as AlunoRepo
+database "PostgreSQL" as DB
+
+== Preencher formulário de cadastro ==
+
+AL -> SPA : preencherCadastro(nome, email, senha, cpf, rg,\ncurso, instituicao, endereco)
+SPA -> AlunoCtrl : POST /api/karv-coins/alunos\n{AlunoRequestDTO}
+activate AlunoCtrl
+AlunoCtrl -> AlunoSvc : cadastrar(AlunoRequestDTO)
+activate AlunoSvc
+
+== Validar unicidade ==
+
+AlunoSvc -> AlunoRepo : existsByCpf(cpf)
+activate AlunoRepo
+AlunoRepo -> DB : SELECT COUNT(*) FROM alunos WHERE cpf=?
+DB --> AlunoRepo : count
+AlunoRepo --> AlunoSvc : boolean
+deactivate AlunoRepo
+
+note right of AlunoSvc
+  Lança exception se CPF ou e-mail
+  já cadastrado. Inicializa saldo = 0
+  e perfil = ALUNO.
+end note
+
+== Persistir aluno ==
+
+AlunoSvc -> AlunoSvc : encriptarSenha(senha) → senhaHash
+
+AlunoSvc -> AlunoRepo : save(new Aluno(dados, saldo=0, perfil=ALUNO))
+activate AlunoRepo
+AlunoRepo -> DB : INSERT INTO usuarios(...) VALUES(...)\nINSERT INTO alunos(...) VALUES(...)
+DB --> AlunoRepo : ids, dataCriacao
+AlunoRepo --> AlunoSvc : Aluno persistido
+deactivate AlunoRepo
+
+AlunoSvc --> AlunoCtrl : AlunoResponseDTO
+deactivate AlunoSvc
+AlunoCtrl --> SPA : 201 Created + JSON
+deactivate AlunoCtrl
+SPA --> AL : cadastro realizado — redirecionar para login
+
+@enduml

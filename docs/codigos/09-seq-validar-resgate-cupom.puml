@@ -1,0 +1,128 @@
+@startuml 09-seq-validar-resgate-cupom
+' KarvCoins — Sequência UC-VALIDAR: Validar Resgate por Cupom (Empresa Parceira)
+' Visão caixa-branca: Empresa ↔ SPA ↔ JwtFilter ↔ ResgateController ↔ ResgateService ↔
+'   ResgateRepository ↔ EmpresaRepository ↔ DB
+
+title Sequência de Realização — UC-VALIDAR: Validar Resgate por Cupom (Empresa Parceira)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Empresa Parceira" as EMP
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":ResgateController" as ResCtrl
+participant ":ResgateService" as ResSvc
+participant ":ResgateRepository" as ResRepo
+participant ":EmpresaRepository" as EmpRepo
+database "PostgreSQL" as DB
+
+== Verificar validade do cupom ==
+
+EMP -> SPA : escanear QR code ou digitar código do cupom
+SPA -> JWT : GET /api/karv-coins/resgates/{codigoCupom}/verificacao\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> ResCtrl : verificar(codigoCupom)
+activate ResCtrl
+ResCtrl -> ResSvc : verificar(codigoCupom)
+activate ResSvc
+
+ResSvc -> ResRepo : findByCodigoCupom(codigoCupom)
+activate ResRepo
+ResRepo -> DB : SELECT r.*, a.nome AS aluno_nome,\nv.descricao AS vantagem_descricao\nFROM resgates r\nJOIN alunos a ON r.aluno_id=a.id\nJOIN vantagens v ON r.vantagem_id=v.id\nWHERE r.codigo_cupom=?
+DB --> ResRepo : row
+ResRepo --> ResSvc : Optional<Resgate>
+deactivate ResRepo
+
+note right of ResSvc
+  Verifica se cupom existe.
+  Verifica se já foi utilizado
+  (utilizadoPor != null).
+  Lança CupomInvalidoException se não encontrado.
+end note
+
+ResSvc --> ResCtrl : ResgateVerificacaoDTO\n{aluno, vantagem, data, status}
+deactivate ResSvc
+ResCtrl --> JWT : 200 OK + ResgateVerificacaoDTO
+deactivate ResCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> EMP : exibir dados do resgate\n(aluno, vantagem, status: PENDENTE ou UTILIZADO)
+
+== Aprovar utilização do cupom ==
+
+alt status == PENDENTE
+
+EMP -> SPA : confirmar utilização
+SPA -> JWT : PATCH /api/karv-coins/resgates/{codigoCupom}/utilizacao\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> ResCtrl : aprovarUtilizacao(codigoCupom, Principal)
+activate ResCtrl
+ResCtrl -> ResSvc : utilizarResgate(codigoCupom, empresaId)
+activate ResSvc
+
+ResSvc -> ResRepo : findByCodigoCupom(codigoCupom)
+activate ResRepo
+ResRepo -> DB : SELECT * FROM resgates WHERE codigo_cupom=?
+DB --> ResRepo : row
+ResRepo --> ResSvc : Resgate
+deactivate ResRepo
+
+ResSvc -> EmpRepo : findById(empresaId)
+activate EmpRepo
+EmpRepo -> DB : SELECT * FROM empresas WHERE id=?
+DB --> EmpRepo : row
+EmpRepo --> ResSvc : Empresa
+deactivate EmpRepo
+
+note right of ResSvc
+  Valida que o resgate ainda não foi utilizado.
+  Atribui utilizadoPor = empresa atual.
+  Lança CupomJaUtilizadoException
+  em caso contrário.
+end note
+
+ResSvc -> ResSvc : resgate.setUtilizadoPor(empresa)
+
+ResSvc -> ResRepo : save(resgate)
+activate ResRepo
+ResRepo -> DB : UPDATE resgates SET utilizado_por_id=? WHERE codigo_cupom=?
+DB --> ResRepo : ok
+ResRepo --> ResSvc : Resgate atualizado
+deactivate ResRepo
+
+ResSvc --> ResCtrl : ResgateResponseDTO {status: UTILIZADO}
+deactivate ResSvc
+ResCtrl --> JWT : 200 OK + ResgateResponseDTO
+deactivate ResCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> EMP : cupom marcado como utilizado — vantagem concedida
+
+else status == UTILIZADO
+
+EMP -> SPA : (apenas visualiza — sem ação disponível)
+SPA --> EMP : exibir aviso "Cupom já utilizado"
+
+end
+
+@enduml

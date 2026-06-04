@@ -1,0 +1,152 @@
+@startuml 06-seq-resgatar-vantagem
+' KarvCoins — Sequência US06: Resgatar Vantagem
+' Visão caixa-branca: Aluno ↔ SPA ↔ JwtFilter ↔ AlunoVantagemController ↔ ResgateService ↔
+'   QrCodeService ↔ Repositories ↔ DB ↔ RabbitMQ ↔ EmailNotificationService ↔ Brevo SMTP
+
+title Sequência de Realização — US06: Resgatar Vantagem
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+skinparam queue {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+}
+skinparam collections {
+  BackgroundColor #F3E5F5
+  BorderColor #7B1FA2
+}
+
+actor "Aluno" as AL
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":AlunoVantagemController" as AvCtrl
+participant ":ResgateService" as ResSvc
+participant ":QrCodeService" as QrSvc
+participant ":AlunoRepository" as AlunoRepo
+participant ":VantagemRepository" as VantRepo
+participant ":ResgateRepository" as ResRepo
+participant ":ApplicationEventPublisher" as EventPub
+database "PostgreSQL" as DB
+queue "RabbitMQ\n(fila de e-mails)" as MQ
+participant ":MoedasEmailListener" as Listener
+participant ":EmailNotificationService" as EmailSvc
+participant ":Brevo SMTP" as SMTP
+
+== Solicitar resgate ==
+
+AL -> SPA : selecionar vantagem e clicar "Resgatar"
+SPA -> JWT : POST /api/karv-coins/vantagens/{vantagemId}/resgates\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> AvCtrl : resgatar(vantagemId, Principal)
+activate AvCtrl
+AvCtrl -> ResSvc : resgatar(alunoId, vantagemId)
+activate ResSvc
+
+ResSvc -> AlunoRepo : findById(alunoId)
+activate AlunoRepo
+AlunoRepo -> DB : SELECT * FROM alunos WHERE id=?
+DB --> AlunoRepo : row
+AlunoRepo --> ResSvc : Aluno
+deactivate AlunoRepo
+
+ResSvc -> VantRepo : findById(vantagemId)
+activate VantRepo
+VantRepo -> DB : SELECT * FROM vantagens WHERE id=?
+DB --> VantRepo : row
+VantRepo --> ResSvc : Vantagem
+deactivate VantRepo
+
+note right of ResSvc
+  Valida saldo suficiente:
+  Aluno.saldo >= Vantagem.custoMoedas.
+  Lança SaldoInsuficienteException
+  em caso contrário.
+end note
+
+== Gerar cupom e debitar saldo ==
+
+ResSvc -> QrSvc : gerarCodigoUnico()
+activate QrSvc
+QrSvc --> ResSvc : codigoCupom (UUID único)
+deactivate QrSvc
+
+ResSvc -> ResSvc : debitar(aluno.saldo, vantagem.custoMoedas)
+
+ResSvc -> ResRepo : save(new Resgate(aluno, vantagem, codigoCupom, valorMoedas))
+activate ResRepo
+ResRepo -> DB : INSERT INTO resgates(...) VALUES(...)
+DB --> ResRepo : id, data
+ResRepo --> ResSvc : Resgate persistido
+deactivate ResRepo
+
+ResSvc -> AlunoRepo : save(aluno) ' saldo debitado
+activate AlunoRepo
+AlunoRepo -> DB : UPDATE alunos SET saldo=? WHERE id=?
+DB --> AlunoRepo : ok
+AlunoRepo --> ResSvc : Aluno atualizado
+deactivate AlunoRepo
+
+== Publicar evento de notificação ==
+
+ResSvc -> EventPub : publishEvent(ResgateCriadoEvent)
+activate EventPub
+EventPub --> ResSvc : (evento despachado)
+deactivate EventPub
+
+ResSvc --> AvCtrl : ResgateResponseDTO {codigoCupom, valorMoedas, data}
+deactivate ResSvc
+AvCtrl --> JWT : 201 Created + ResgateResponseDTO
+deactivate AvCtrl
+JWT --> SPA : 201 Created + JSON
+deactivate JWT
+SPA --> AL : exibir cupom e código único
+
+== Notificação por e-mail (assíncrono via RabbitMQ) ==
+
+EventPub ->> MQ : ResgateCriadoEvent → fila
+activate MQ
+MQ ->> Listener : mensagem entregue
+deactivate MQ
+activate Listener
+
+Listener -> EmailSvc : notificarAlunoResgate(aluno, resgate)
+activate EmailSvc
+EmailSvc -> SMTP : sendMail(aluno.email, "Seu cupom", codigoCupom)
+SMTP --> EmailSvc : OK
+EmailSvc --> Listener : enviado ao aluno
+deactivate EmailSvc
+
+Listener -> EmailSvc : notificarEmpresaResgate(empresa, resgate)
+activate EmailSvc
+EmailSvc -> SMTP : sendMail(empresa.email, "Cupom para conferência", codigoCupom)
+SMTP --> EmailSvc : OK
+EmailSvc --> Listener : enviado à empresa
+deactivate EmailSvc
+
+deactivate Listener
+
+note over MQ, SMTP
+  E-mails enviados de forma assíncrona.
+  Aluno recebe o cupom para apresentar.
+  Empresa recebe o código para conferência presencial.
+end note
+
+@enduml

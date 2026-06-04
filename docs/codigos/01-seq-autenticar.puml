@@ -1,0 +1,73 @@
+@startuml 01-seq-autenticar
+' KarvCoins — Sequência UC-AUTH: Autenticar
+' Visão caixa-branca: Usuário ↔ SPA ↔ AuthController ↔ AuthService ↔ UsuarioRepository ↔ JwtTokenService ↔ DB
+
+title Sequência de Realização — UC-AUTH: Autenticar
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Usuário\n(Aluno / Professor / Empresa)" as U
+participant ":SPA Angular" as SPA
+participant ":AuthController" as AuthCtrl
+participant ":AuthService" as AuthSvc
+participant ":UsuarioRepository" as UsuarioRepo
+participant ":JwtTokenService" as JWT
+database "PostgreSQL" as DB
+
+== Submeter credenciais ==
+
+U -> SPA : preencherFormulario(email, senha)
+SPA -> AuthCtrl : POST /api/karv-coins/auth/login\n{email, senha}
+activate AuthCtrl
+AuthCtrl -> AuthSvc : autenticar(email, senha)
+activate AuthSvc
+
+AuthSvc -> UsuarioRepo : findByEmail(email)
+activate UsuarioRepo
+UsuarioRepo -> DB : SELECT * FROM usuarios WHERE email=?
+DB --> UsuarioRepo : row
+UsuarioRepo --> AuthSvc : Optional<Usuario>
+deactivate UsuarioRepo
+
+note right of AuthSvc
+  Valida senha com BCryptPasswordEncoder.
+  Lança AuthenticationException
+  se credenciais inválidas.
+end note
+
+AuthSvc -> AuthSvc : validarSenha(senhaRaw, senhaHash)
+
+== Gerar token JWT ==
+
+AuthSvc -> JWT : gerarToken(usuario)
+activate JWT
+JWT --> AuthSvc : tokenJWT (assinado RS256)
+deactivate JWT
+
+AuthSvc --> AuthCtrl : LoginResponseDTO {token, perfil, nome}
+deactivate AuthSvc
+AuthCtrl --> SPA : 200 OK + JSON
+deactivate AuthCtrl
+
+SPA -> SPA : armazenarToken(localStorage)
+SPA --> U : redirecionar para /painel (perfil específico)
+
+@enduml

@@ -1,0 +1,78 @@
+@startuml 08-seq-cadastrar-vantagem
+' KarvCoins — Sequência US11: Cadastrar Vantagem (Empresa Parceira)
+' Visão caixa-branca: Empresa ↔ SPA ↔ JwtFilter ↔ VantagemController ↔ VantagemService ↔
+'   EmpresaRepository ↔ VantagemRepository ↔ DB
+
+title Sequência de Realização — US11: Cadastrar Vantagem (Empresa Parceira)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Empresa Parceira" as EMP
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":VantagemController" as VantCtrl
+participant ":VantagemService" as VantSvc
+participant ":EmpresaRepository" as EmpRepo
+participant ":VantagemRepository" as VantRepo
+database "PostgreSQL" as DB
+
+== Preencher formulário de vantagem ==
+
+EMP -> SPA : preencherFormulario(descricao, fotoUrl, custoMoedas)
+SPA -> JWT : POST /api/karv-coins/empresas/me/vantagens\n{VantagemRequestDTO}\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> VantCtrl : cadastrar(VantagemRequestDTO, Principal)
+activate VantCtrl
+VantCtrl -> VantSvc : cadastrar(empresaId, VantagemRequestDTO)
+activate VantSvc
+
+== Validar e persistir ==
+
+VantSvc -> EmpRepo : findById(empresaId)
+activate EmpRepo
+EmpRepo -> DB : SELECT * FROM empresas WHERE id=?
+DB --> EmpRepo : row
+EmpRepo --> VantSvc : Empresa
+deactivate EmpRepo
+
+note right of VantSvc
+  Todos os campos são obrigatórios:
+  descricao, fotoUrl, custoMoedas.
+  Lança ValidationException se inválido.
+end note
+
+VantSvc -> VantRepo : save(new Vantagem(empresa, descricao, fotoUrl, custoMoedas))
+activate VantRepo
+VantRepo -> DB : INSERT INTO vantagens(...) VALUES(...)
+DB --> VantRepo : id, dataCriacao
+VantRepo --> VantSvc : Vantagem persistida
+deactivate VantRepo
+
+VantSvc --> VantCtrl : VantagemResponseDTO {id, descricao, fotoUrl, custoMoedas}
+deactivate VantSvc
+VantCtrl --> JWT : 201 Created + VantagemResponseDTO
+deactivate VantCtrl
+JWT --> SPA : 201 Created + JSON
+deactivate JWT
+SPA --> EMP : vantagem cadastrada com sucesso\n(aparece imediatamente no catálogo dos alunos)
+
+@enduml

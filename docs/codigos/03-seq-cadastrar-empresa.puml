@@ -1,0 +1,73 @@
+@startuml 03-seq-cadastrar-empresa
+' KarvCoins — Sequência UC-CAD-EMP: Cadastrar-se (Empresa Parceira)
+' Visão caixa-branca: Empresa ↔ SPA ↔ EmpresaController ↔ EmpresaService ↔ EmpresaRepository ↔ DB
+
+title Sequência de Realização — UC-CAD-EMP: Cadastrar-se (Empresa Parceira)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Empresa Parceira" as EMP
+participant ":SPA Angular" as SPA
+participant ":EmpresaController" as EmpCtrl
+participant ":EmpresaService" as EmpSvc
+participant ":EmpresaRepository" as EmpRepo
+database "PostgreSQL" as DB
+
+== Preencher formulário de cadastro ==
+
+EMP -> SPA : preencherCadastro(nome, email, senha, cnpj)
+SPA -> EmpCtrl : POST /api/karv-coins/empresas\n{EmpresaRequestDTO}
+activate EmpCtrl
+EmpCtrl -> EmpSvc : cadastrar(EmpresaRequestDTO)
+activate EmpSvc
+
+== Validar unicidade ==
+
+EmpSvc -> EmpRepo : existsByCnpj(cnpj)
+activate EmpRepo
+EmpRepo -> DB : SELECT COUNT(*) FROM empresas WHERE cnpj=?
+DB --> EmpRepo : count
+EmpRepo --> EmpSvc : boolean
+deactivate EmpRepo
+
+note right of EmpSvc
+  Lança exception se CNPJ ou e-mail
+  já cadastrado. Define perfil = EMPRESA.
+end note
+
+== Persistir empresa ==
+
+EmpSvc -> EmpSvc : encriptarSenha(senha) → senhaHash
+
+EmpSvc -> EmpRepo : save(new Empresa(dados, perfil=EMPRESA))
+activate EmpRepo
+EmpRepo -> DB : INSERT INTO usuarios(...) VALUES(...)\nINSERT INTO empresas(...) VALUES(...)
+DB --> EmpRepo : ids, dataCriacao
+EmpRepo --> EmpSvc : Empresa persistida
+deactivate EmpRepo
+
+EmpSvc --> EmpCtrl : EmpresaResponseDTO
+deactivate EmpSvc
+EmpCtrl --> SPA : 201 Created + JSON
+deactivate EmpCtrl
+SPA --> EMP : cadastro realizado — redirecionar para login
+
+@enduml

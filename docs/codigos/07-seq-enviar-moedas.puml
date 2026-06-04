@@ -1,0 +1,165 @@
+@startuml 07-seq-enviar-moedas
+' KarvCoins — Sequência US08: Enviar Moedas ao Aluno
+' Visão caixa-branca: Professor ↔ SPA ↔ JwtFilter ↔ AlunoController / MoedaController ↔
+'   MoedaService ↔ Repositories ↔ DB ↔ RabbitMQ ↔ EmailNotificationService ↔ Brevo SMTP
+
+title Sequência de Realização — US08: Enviar Moedas ao Aluno
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+skinparam queue {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+}
+
+actor "Professor" as PR
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":AlunoController" as AlunoCtrl
+participant ":MoedaController" as MoedaCtrl
+participant ":MoedaService" as MoedaSvc
+participant ":ProfessorRepository" as ProfRepo
+participant ":AlunoRepository" as AlunoRepo
+participant ":TransacaoRepository" as TrRepo
+participant ":ApplicationEventPublisher" as EventPub
+database "PostgreSQL" as DB
+queue "RabbitMQ\n(fila de e-mails)" as MQ
+participant ":MoedasEmailListener" as Listener
+participant ":EmailNotificationService" as EmailSvc
+participant ":Brevo SMTP" as SMTP
+
+== Buscar aluno para seleção ==
+
+PR -> SPA : digitar nome ou CPF do aluno
+SPA -> JWT : GET /api/karv-coins/alunos/selecao?query=...\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> AlunoCtrl : listarParaSelecao(query)
+activate AlunoCtrl
+AlunoCtrl -> AlunoRepo : findByNomeOrCpfContaining(query)
+activate AlunoRepo
+AlunoRepo -> DB : SELECT * FROM alunos a JOIN usuarios u ON a.id=u.id\nWHERE u.nome ILIKE ? OR a.cpf LIKE ?
+DB --> AlunoRepo : rows
+AlunoRepo --> AlunoCtrl : List<AlunoSelecaoDTO>
+deactivate AlunoRepo
+AlunoCtrl --> JWT : 200 OK + List
+deactivate AlunoCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> PR : exibir lista de alunos
+
+PR -> SPA : selecionar aluno, informar valor e motivo
+
+== Enviar moedas ==
+
+SPA -> JWT : POST /api/karv-coins/moedas/envios\n{alunoId, valor, motivo}\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> MoedaCtrl : enviarMoedas(EnvioMoedasRequestDTO, Principal)
+activate MoedaCtrl
+MoedaCtrl -> MoedaSvc : enviarMoedas(professorId, alunoId, valor, motivo)
+activate MoedaSvc
+
+MoedaSvc -> ProfRepo : findById(professorId)
+activate ProfRepo
+ProfRepo -> DB : SELECT * FROM professores WHERE id=?
+DB --> ProfRepo : row
+ProfRepo --> MoedaSvc : Professor
+deactivate ProfRepo
+
+MoedaSvc -> AlunoRepo : findById(alunoId)
+activate AlunoRepo
+AlunoRepo -> DB : SELECT * FROM alunos WHERE id=?
+DB --> AlunoRepo : row
+AlunoRepo --> MoedaSvc : Aluno
+deactivate AlunoRepo
+
+note right of MoedaSvc
+  Valida saldo suficiente:
+  Professor.saldo >= valor.
+  Valida motivo obrigatório.
+  Lança SaldoInsuficienteException
+  em caso contrário.
+end note
+
+== Registrar transação e atualizar saldos ==
+
+MoedaSvc -> MoedaSvc : debitar(professor.saldo, valor)
+MoedaSvc -> MoedaSvc : creditar(aluno.saldo, valor)
+
+MoedaSvc -> TrRepo : save(new Transacao(professor, aluno, valor, motivo))
+activate TrRepo
+TrRepo -> DB : INSERT INTO transacoes(...) VALUES(...)
+DB --> TrRepo : id, data
+TrRepo --> MoedaSvc : Transacao persistida
+deactivate TrRepo
+
+MoedaSvc -> ProfRepo : save(professor) ' saldo debitado
+activate ProfRepo
+ProfRepo -> DB : UPDATE professores SET saldo=? WHERE id=?
+DB --> ProfRepo : ok
+ProfRepo --> MoedaSvc : Professor atualizado
+deactivate ProfRepo
+
+MoedaSvc -> AlunoRepo : save(aluno) ' saldo creditado
+activate AlunoRepo
+AlunoRepo -> DB : UPDATE alunos SET saldo=? WHERE id=?
+DB --> AlunoRepo : ok
+AlunoRepo --> MoedaSvc : Aluno atualizado
+deactivate AlunoRepo
+
+== Publicar evento de notificação ==
+
+MoedaSvc -> EventPub : publishEvent(MoedasEnviadasEvent)
+activate EventPub
+EventPub --> MoedaSvc : (evento despachado)
+deactivate EventPub
+
+MoedaSvc --> MoedaCtrl : TransacaoResponseDTO {id, valor, motivo, data}
+deactivate MoedaSvc
+MoedaCtrl --> JWT : 200 OK + TransacaoResponseDTO
+deactivate MoedaCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> PR : confirmação de envio
+
+== Notificação por e-mail ao aluno (assíncrono via RabbitMQ) ==
+
+EventPub ->> MQ : MoedasEnviadasEvent → fila
+activate MQ
+MQ ->> Listener : mensagem entregue
+deactivate MQ
+activate Listener
+
+Listener -> EmailSvc : notificarAlunoRecebimento(aluno, transacao)
+activate EmailSvc
+EmailSvc -> SMTP : sendMail(aluno.email, "Você recebeu moedas!", valor, motivo)
+SMTP --> EmailSvc : OK
+EmailSvc --> Listener : enviado
+deactivate EmailSvc
+deactivate Listener
+
+note over MQ, SMTP
+  E-mail enviado de forma assíncrona.
+  Aluno é notificado sobre o crédito
+  e o motivo do reconhecimento.
+end note
+
+@enduml

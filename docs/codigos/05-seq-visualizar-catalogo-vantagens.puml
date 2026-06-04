@@ -1,0 +1,67 @@
+@startuml 05-seq-visualizar-catalogo-vantagens
+' KarvCoins — Sequência US05: Visualizar Catálogo de Vantagens
+' Visão caixa-branca: Aluno ↔ SPA ↔ JwtFilter ↔ VantagemController ↔ VantagemService ↔ VantagemRepository ↔ DB
+
+title Sequência de Realização — US05: Visualizar Catálogo de Vantagens
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Aluno" as AL
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":VantagemController" as VantCtrl
+participant ":VantagemService" as VantSvc
+participant ":VantagemRepository" as VantRepo
+database "PostgreSQL" as DB
+
+== Carregar catálogo de vantagens ==
+
+AL -> SPA : navegar para catálogo de vantagens
+SPA -> JWT : GET /api/karv-coins/vantagens\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> VantCtrl : listar()
+activate VantCtrl
+VantCtrl -> VantSvc : listar()
+activate VantSvc
+
+VantSvc -> VantRepo : findAll()
+activate VantRepo
+VantRepo -> DB : SELECT v.*, e.nome AS empresa_nome\nFROM vantagens v\nJOIN empresas e ON v.empresa_id = e.id
+DB --> VantRepo : rows
+VantRepo --> VantSvc : List<Vantagem>
+deactivate VantRepo
+
+note right of VantSvc
+  Cada vantagem inclui:
+  descrição, fotoUrl, custoMoedas
+  e nome da empresa parceira.
+end note
+
+VantSvc --> VantCtrl : List<VantagemResponseDTO>
+deactivate VantSvc
+VantCtrl --> JWT : 200 OK + List
+deactivate VantCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> AL : exibir catálogo\n(cards com foto, descrição, custo em moedas, empresa)
+
+@enduml

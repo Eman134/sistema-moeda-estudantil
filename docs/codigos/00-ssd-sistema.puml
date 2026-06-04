@@ -1,0 +1,180 @@
+@startuml 00-ssd-sistema
+' KarvCoins — Diagrama de Sequência do Sistema (SSD)
+' Visão caixa-preta, ponta a ponta: os 3 atores (Aluno, Professor, Empresa Parceira)
+' e o próprio Sistema interagem cobrindo o ciclo completo da moeda estudantil —
+' desde o cadastro até o resgate e validação de vantagens.
+' A realização interna (caixa-branca) de cada operação está nos diagramas
+' 01 a 11 (seção de Realizações de Casos de Uso).
+
+title Diagrama de Sequência do Sistema — KarvCoins (Caixa-Preta)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Aluno" as AL
+actor "Professor" as PR
+actor "Empresa Parceira" as EMP
+actor "Sistema\n(Scheduler)" as SCH
+participant ":Sistema\nKarvCoins" as S
+
+== 1. Cadastro — US01 (Aluno) / US10 (Empresa Parceira) ==
+
+AL -> S : cadastrarAluno(nome, email, senha, cpf, rg, curso, instituicao, endereco)
+activate S
+note right of S
+  Valida unicidade de CPF e e-mail.
+  Inicializa saldo = 0 moedas.
+end note
+S --> AL : {id, confirmação de cadastro}
+deactivate S
+
+EMP -> S : cadastrarEmpresa(nome, email, senha, cnpj)
+activate S
+note right of S
+  Valida unicidade de CNPJ e e-mail.
+end note
+S --> EMP : {id, confirmação de cadastro}
+deactivate S
+
+== 2. Autenticação — US02 (Aluno) / US07 (Professor) / US13 (Empresa Parceira) ==
+
+AL -> S : login(email, senha)
+activate S
+S --> AL : {token JWT, perfil = ALUNO}
+deactivate S
+
+PR -> S : login(email, senha)
+activate S
+S --> PR : {token JWT, perfil = PROFESSOR}
+deactivate S
+
+EMP -> S : login(email, senha)
+activate S
+S --> EMP : {token JWT, perfil = EMPRESA}
+deactivate S
+
+== 3. Gerenciamento de vantagens — US11 (Empresa Parceira) ==
+
+EMP -> S : cadastrarVantagem(descricao, fotoUrl, custoMoedas)
+activate S
+note right of S
+  Associa a vantagem à empresa.
+  Disponibiliza imediatamente
+  no catálogo dos alunos.
+end note
+S --> EMP : {id, VantagemResponseDTO}
+deactivate S
+
+== 4. Reconhecimento acadêmico — US08 (Professor) + US03 (notificação ao Aluno) ==
+
+PR -> S : buscarAlunos(query)
+activate S
+S --> PR : listaAlunos
+deactivate S
+
+PR -> S : enviarMoedas(alunoId, valor, motivo)
+activate S
+note right of S
+  Valida saldo do professor suficiente.
+  Debita professor, credita aluno.
+  Registra Transacao.
+  Notifica aluno por e-mail (assíncrono).
+end note
+S --> PR : {TransacaoResponseDTO}
+deactivate S
+
+S ->> AL : e-mail "Você recebeu moedas!\n valor: X, motivo: ..."
+note right of AL
+  US03 — Notificação assíncrona
+  via RabbitMQ → Brevo SMTP.
+end note
+
+== 5. Visualização e resgate de vantagens — US05 / US06 (Aluno) + US12 (notificação à Empresa) ==
+
+AL -> S : listarVantagens()
+activate S
+S --> AL : List<VantagemResponseDTO> {descricao, foto, custo, empresa}
+deactivate S
+
+AL -> S : resgatarVantagem(vantagemId)
+activate S
+note right of S
+  Valida saldo do aluno suficiente.
+  Debita saldo. Gera código único (cupom).
+  Registra Resgate.
+  Notifica aluno e empresa por e-mail (assíncrono).
+end note
+S --> AL : {codigoCupom, valorMoedas, data}
+deactivate S
+
+S ->> AL : e-mail "Seu cupom de resgate:\n código: XXXX"
+S ->> EMP : e-mail "Cupom para conferência:\n código: XXXX"
+note right of EMP
+  US12 — Notificações assíncronas
+  via RabbitMQ → Brevo SMTP.
+end note
+
+== 6. Validação do cupom — UC-VALIDAR (Empresa Parceira) ==
+
+EMP -> S : verificarResgate(codigoCupom)
+activate S
+note right of S
+  Retorna dados do aluno, da vantagem
+  e o status do cupom (PENDENTE/UTILIZADO).
+end note
+S --> EMP : {aluno, vantagem, status}
+deactivate S
+
+EMP -> S : aprovarUtilizacao(codigoCupom)
+activate S
+note right of S
+  Marca o resgate como utilizado.
+  Registra a empresa que validou.
+end note
+S --> EMP : {status = UTILIZADO}
+deactivate S
+
+== 7. Consulta de extratos — US04 (Aluno) / US09 (Professor) ==
+
+AL -> S : consultarExtratoAluno()
+activate S
+S --> AL : {saldo, List<ExtratoItem> {data, tipo, valor, descricao}}
+deactivate S
+
+PR -> S : consultarExtratoProfessor()
+activate S
+S --> PR : {saldo, List<ExtratoItem> {data, aluno, valor, motivo}}
+deactivate S
+
+== 8. Crédito semestral automático — US14 (Sistema) ==
+
+SCH -> S : creditarCotaSemestral()
+activate S
+note right of S
+  Soma 1.000 moedas ao saldo de
+  cada professor (acumulativo).
+  Executado no início de cada semestre.
+end note
+S --> SCH : {professoresAtualizados, totalMoedasDistribuidas}
+deactivate S
+
+note over AL, S
+  Visão caixa-preta consolidada do sistema: cada operação é
+  realizada internamente nos diagramas de realização (caixa-branca)
+  01-seq-autenticar.puml a 11-seq-consultar-extrato-professor.puml.
+end note
+
+@enduml

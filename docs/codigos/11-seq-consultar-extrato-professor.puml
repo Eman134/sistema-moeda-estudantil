@@ -1,0 +1,93 @@
+@startuml 11-seq-consultar-extrato-professor
+' KarvCoins — Sequência UC-EXT-PROF: Consultar Extrato (Professor)
+' Visão caixa-branca: Professor ↔ SPA ↔ JwtFilter ↔ ProfessorController ↔ ProfessorService ↔
+'   ExtratoService ↔ ProfessorRepository ↔ TransacaoRepository ↔ DB
+
+title Sequência de Realização — UC-EXT-PROF: Consultar Extrato (Professor)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Professor" as PR
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":ProfessorController" as ProfCtrl
+participant ":ProfessorService" as ProfSvc
+participant ":ExtratoService" as ExtratoSvc
+participant ":ProfessorRepository" as ProfRepo
+participant ":TransacaoRepository" as TrRepo
+database "PostgreSQL" as DB
+
+== Carregar saldo atual ==
+
+PR -> SPA : acessar extrato
+SPA -> JWT : GET /api/karv-coins/professores/me/resumo\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> ProfCtrl : getResumoMe(Principal)
+activate ProfCtrl
+ProfCtrl -> ProfSvc : getResumoMe(professorId)
+activate ProfSvc
+ProfSvc -> ProfRepo : findById(professorId)
+activate ProfRepo
+ProfRepo -> DB : SELECT * FROM professores p\nJOIN usuarios u ON p.id=u.id WHERE p.id=?
+DB --> ProfRepo : row
+ProfRepo --> ProfSvc : Professor
+deactivate ProfRepo
+ProfSvc --> ProfCtrl : ProfessorResumoDTO {nome, departamento, saldo}
+deactivate ProfSvc
+ProfCtrl --> JWT : 200 OK + ProfessorResumoDTO
+deactivate ProfCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> PR : exibir saldo atual
+
+== Carregar histórico de envios ==
+
+SPA -> JWT : GET /api/karv-coins/professores/me/extrato\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> ProfCtrl : getExtratoMe(Principal)
+activate ProfCtrl
+ProfCtrl -> ExtratoSvc : getExtratoProfessor(professorId)
+activate ExtratoSvc
+
+ExtratoSvc -> TrRepo : findByProfessorId(professorId)
+activate TrRepo
+TrRepo -> DB : SELECT t.*, a.nome AS aluno_nome\nFROM transacoes t\nJOIN alunos a ON t.aluno_id=a.id\nWHERE t.professor_id=? ORDER BY t.data DESC
+DB --> TrRepo : rows (envios de moedas)
+TrRepo --> ExtratoSvc : List<Transacao>
+deactivate TrRepo
+
+note right of ExtratoSvc
+  Cada item do extrato inclui:
+  data, aluno beneficiado, valor
+  e motivo do reconhecimento.
+end note
+
+ExtratoSvc --> ProfCtrl : List<ExtratoItemDTO>\n{data, aluno, valor, motivo}
+deactivate ExtratoSvc
+ProfCtrl --> JWT : 200 OK + List
+deactivate ProfCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> PR : exibir histórico de moedas enviadas
+
+@enduml

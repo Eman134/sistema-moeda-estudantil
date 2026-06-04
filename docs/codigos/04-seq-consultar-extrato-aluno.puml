@@ -1,0 +1,100 @@
+@startuml 04-seq-consultar-extrato-aluno
+' KarvCoins — Sequência US04: Consultar Extrato (Aluno)
+' Visão caixa-branca: Aluno ↔ SPA ↔ JwtFilter ↔ AlunoController ↔ AlunoService ↔ ExtratoService ↔ Repositories ↔ DB
+
+title Sequência de Realização — US04: Consultar Extrato (Aluno)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Aluno" as AL
+participant ":SPA Angular" as SPA
+participant ":JwtFilter\n(Spring Security)" as JWT
+participant ":AlunoController" as AlunoCtrl
+participant ":AlunoService" as AlunoSvc
+participant ":ExtratoService" as ExtratoSvc
+participant ":AlunoRepository" as AlunoRepo
+participant ":TransacaoRepository" as TrRepo
+participant ":ResgateRepository" as ResRepo
+database "PostgreSQL" as DB
+
+== Carregar saldo atual ==
+
+AL -> SPA : acessar extrato
+SPA -> JWT : GET /api/karv-coins/alunos/me/resumo\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> AlunoCtrl : getResumoMe(Principal)
+activate AlunoCtrl
+AlunoCtrl -> AlunoSvc : getResumoMe(alunoId)
+activate AlunoSvc
+AlunoSvc -> AlunoRepo : findById(alunoId)
+activate AlunoRepo
+AlunoRepo -> DB : SELECT * FROM alunos a JOIN usuarios u ON a.id=u.id WHERE a.id=?
+DB --> AlunoRepo : row
+AlunoRepo --> AlunoSvc : Aluno
+deactivate AlunoRepo
+AlunoSvc --> AlunoCtrl : AlunoResumoDTO {nome, saldo}
+deactivate AlunoSvc
+AlunoCtrl --> JWT : 200 OK + AlunoResumoDTO
+deactivate AlunoCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> AL : exibir saldo atual
+
+== Carregar histórico de transações ==
+
+SPA -> JWT : GET /api/karv-coins/alunos/me/extrato\n(Authorization: Bearer token)
+activate JWT
+JWT -> JWT : validarToken() — extrairPrincipal()
+JWT -> AlunoCtrl : getExtratoMe(Principal)
+activate AlunoCtrl
+AlunoCtrl -> ExtratoSvc : getExtratoAluno(alunoId)
+activate ExtratoSvc
+
+ExtratoSvc -> TrRepo : findByAlunoId(alunoId)
+activate TrRepo
+TrRepo -> DB : SELECT * FROM transacoes WHERE aluno_id=? ORDER BY data DESC
+DB --> TrRepo : rows (recebimentos de moedas)
+TrRepo --> ExtratoSvc : List<Transacao>
+deactivate TrRepo
+
+ExtratoSvc -> ResRepo : findByAlunoId(alunoId)
+activate ResRepo
+ResRepo -> DB : SELECT * FROM resgates WHERE aluno_id=? ORDER BY data DESC
+DB --> ResRepo : rows (resgates de vantagens)
+ResRepo --> ExtratoSvc : List<Resgate>
+deactivate ResRepo
+
+note right of ExtratoSvc
+  Consolida recebimentos e resgates
+  em lista unificada de ExtratoItemDTO,
+  ordenada por data decrescente.
+end note
+
+ExtratoSvc --> AlunoCtrl : List<ExtratoItemDTO> {data, tipo, valor, descricao}
+deactivate ExtratoSvc
+AlunoCtrl --> JWT : 200 OK + List
+deactivate AlunoCtrl
+JWT --> SPA : 200 OK + JSON
+deactivate JWT
+SPA --> AL : exibir histórico de transações
+
+@enduml

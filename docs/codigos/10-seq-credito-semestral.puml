@@ -1,0 +1,74 @@
+@startuml 10-seq-credito-semestral
+' KarvCoins — Sequência US14: Crédito Semestral de Moedas (Professores)
+' Visão caixa-branca: Scheduler ↔ ProfessorService ↔ ProfessorRepository ↔ DB
+
+title Sequência de Realização — US14: Crédito Semestral de Moedas (Professores)
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam participant {
+  BackgroundColor #FFF8E1
+  BorderColor #B7791F
+}
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
+}
+skinparam database {
+  BackgroundColor #E8F5E9
+  BorderColor #2E7D32
+}
+skinparam note {
+  BackgroundColor #F3F4F6
+  BorderColor #9E9E9E
+}
+
+actor "Sistema\n(Scheduler / Cron)" as SCH
+participant ":ProfessorService" as ProfSvc
+participant ":ProfessorRepository" as ProfRepo
+database "PostgreSQL" as DB
+
+== Crédito automático no início do semestre ==
+
+SCH -> ProfSvc : creditarCotaSemestral()\n[disparado via @Scheduled no início de cada semestre]
+activate ProfSvc
+
+ProfSvc -> ProfRepo : findAll()
+activate ProfRepo
+ProfRepo -> DB : SELECT * FROM professores p\nJOIN usuarios u ON p.id=u.id
+DB --> ProfRepo : rows
+ProfRepo --> ProfSvc : List<Professor>
+deactivate ProfRepo
+
+note right of ProfSvc
+  Para cada professor:
+    saldo += 1.000 moedas.
+  Operação acumulativa —
+  saldo anterior é preservado.
+end note
+
+loop Para cada Professor da lista
+
+ProfSvc -> ProfSvc : professor.setSaldo(saldo + 1000)
+
+end
+
+ProfSvc -> ProfRepo : saveAll(professores)
+activate ProfRepo
+ProfRepo -> DB : UPDATE professores SET saldo=?\nFOR EACH professor
+DB --> ProfRepo : rows atualizadas
+ProfRepo --> ProfSvc : List<Professor> atualizados
+deactivate ProfRepo
+
+ProfSvc --> SCH : crédito semestral concluído
+deactivate ProfSvc
+
+note over SCH, DB
+  Critério de aceitação (US14):
+  - As 1.000 moedas são SOMADAS ao saldo existente (acumulativo).
+  - O processo é executado automaticamente no início de cada semestre letivo.
+  - Não substitui o saldo anterior.
+end note
+
+@enduml
