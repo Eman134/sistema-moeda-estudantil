@@ -1,53 +1,53 @@
 server:
   servlet:
-    context-path: /api/karv-coins
+    context-path: ${SERVER_CONTEXT_PATH}
 
 spring:
   application:
-    name: karv-coins
+    name: ${APP_NAME}
   datasource:
-    url: jdbc:postgresql://ep-autumn-hall-acokcx3b-pooler.sa-east-1.aws.neon.tech/db-karv-coins-des?sslmode=require&channelBinding=require
-    username: karv-coins-db-owner
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   rabbitmq:
     addresses: ${QUEUE_ADDRESS}
   mail:
-    host: ${MAIL_HOST:smtp-relay.brevo.com}
-    port: ${MAIL_PORT:587}
-    username: ${BREVO_SMTP_LOGIN:${MAIL_USERNAME:}}
-    password: ${BREVO_SMTP_KEY:${MAIL_PASSWORD:}}
-    test-connection: ${MAIL_TEST_CONNECTION:false}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${BREVO_SMTP_LOGIN}
+    password: ${BREVO_SMTP_KEY}
+    test-connection: ${MAIL_TEST_CONNECTION}
     properties:
       mail:
         smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:10000}
-          timeout: ${MAIL_SMTP_TIMEOUT:10000}
-          writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:10000}
+          auth: ${MAIL_SMTP_AUTH}
+          connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT}
+          timeout: ${MAIL_SMTP_TIMEOUT}
+          writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT}
           starttls:
-            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
-            required: true
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED}
 
 app:
   frontend:
-    base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
+    base-url: ${FRONTEND_BASE_URL}
   security:
     jwt:
-      issuer: karv-coins
-      expiration-seconds: 3600
-      secret: ${JWT_SECRET:jwtsecretasdasdasdsd}
+      issuer: ${JWT_ISSUER}
+      expiration-seconds: ${JWT_EXPIRATION_SECONDS}
+      secret: ${JWT_SECRET}
   mail:
-    enabled: ${MAIL_ENABLED:${BREVO_ENABLED:false}}
-    validate-on-startup: ${MAIL_VALIDATE_ON_STARTUP:false}
-    from: ${BREVO_MAIL_FROM:${MAIL_FROM:}}
-    app-name: KarvCoins
+    enabled: ${MAIL_ENABLED}
+    validate-on-startup: ${MAIL_VALIDATE_ON_STARTUP}
+    from: ${BREVO_MAIL_FROM}
+    app-name: ${APP_MAIL_NAME}
 
 springdoc:
   api-docs:
